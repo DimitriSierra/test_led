@@ -1,0 +1,38 @@
+{
+  "name": "@DimitriSierra/LunoApi",
+  "version": "0.0.0",
+  "description": "Command line utility to act as a bot for the luno exchange",
+  "main": "main.js",
+  "scripts": {
+    "test": "mocha",
+    "coverage": "env LOG_LEVEL=off istanbul cover _mocha -- --opts mocha.opts -R spec > coverage.txt",
+    "test-cover": "istanbul cover _mocha -- test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DimitriSierra/LunoApi.git"
+  },
+  "keywords": [
+    "LunoApi",
+    "Bot",
+    "Exchange"
+  ],
+  "author": "Dimitri Providas",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/DimitriSierra/LunoApi/issues"
+  },
+  "homepage": "https://github.com/DimitriSierra/LunoApi#readme",
+  "dependencies": {
+    "istanbul": "^0.4.5"
+  },
+  "devDependencies": {
+    "async": "^2.5.0",
+    "chai": "^3.5.0",
+    "istanbul": "^0.4.5",
+    "jquery": "^2.2.4",
+    "jshint": "^2.9.4",
+    "lodash": "^4.17.4",
+    "mocha": "^3.4.1"
+  }
+}
