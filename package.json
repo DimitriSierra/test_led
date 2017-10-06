@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/DimitriSierra/LunoApi#readme",
   "dependencies": {
+    "request": "^2.83.0"
   },
   "devDependencies": {
     "async": "^2.5.0",

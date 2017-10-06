@@ -4,6 +4,20 @@ var _ = require('lodash');
 function UtilsClass() {
 
   this.getCurrentPrice = function getCurrentPrice(callback) {
+    luno.getCurrentBTCZAR(function (err, result) {
+      if (err) return callback(err);
+      if (!result || !result.body) return callback('Result unexpected');
+      var foundBTCZAR = result.body.indexOf('BTC/ZAR ');
+      if (foundBTCZAR == -1) return callback('Body unexpected');
+      var stringBTC = result.body.substring(foundBTCZAR);
+      var foundBTCZAR2 = stringBTC.indexOf('BTC/ZAR ');
+      var currentPrice = stringBTC.substring(foundBTCZAR2 + 8, stringBTC.indexOf('"}'));
+      currentPrice = parseInt(currentPrice.replace(/,/g, ''));
+      callback(err, currentPrice);
+    });
+  };
+
+  this.getLastTicket = function getLastTicket(callback) {
     luno.getTicker(function (err, result) {
       if (err) return callback(err);
       if (!result || !result.last_trade) return callback('Result unexpected');
@@ -16,18 +30,43 @@ function UtilsClass() {
     if (!_.isInteger(numOrders)) return callback('numOrders not integer');
     if (numOrders <= 0) return callback('numOrders not larger than 0');
     luno.getOrderBook(function (err, result) {
-      if (err) return callback(err);
-      if (!result || !result.bids || !result.asks) return callback('Result unexpected');
-      var arrayBids = result.bids.slice(0, numOrders);
-      var arrayAsks = result.asks.slice(0, numOrders);
-      var bidVolume = 0;
-      var askVolume = 0;
-      for (var i = 0; i < numOrders; i++) {
-        bidVolume += parseFloat(arrayBids[i].volume);
-        askVolume += parseFloat(arrayAsks[i].volume);
+        if (err) return callback(err);
+        if (!result || !result.bids || !result.asks) return callback('Result unexpected');
+
+        var bidArray = [];
+        for (var i = 0; i < result.bids.length; i++) {
+          if (i == result.bids.length - 1) continue;
+          if (result.bids[i].price == result.bids[i + 1].price) {
+            var addedVolume = parseFloat(result.bids[i + 1].volume) + parseFloat(result.bids[i].volume);
+            result.bids[i + 1].volume = addedVolume.toString();
+            continue;
+          }
+          bidArray.push(result.bids[i]);
+        }
+
+        var askArray = [];
+        for (var i = 0; i < result.asks.length; i++) {
+          if (i == result.asks.length - 1) continue;
+          if (result.asks[i].price == result.asks[i + 1].price) {
+            var addedVolume = parseFloat(result.asks[i + 1].volume) + parseFloat(result.asks[i].volume);
+            result.asks[i + 1].volume = addedVolume.toString();
+            continue;
+          }
+          askArray.push(result.asks[i]);
+        }
+
+        var arrayBids = bidArray.slice(0, numOrders);
+        var arrayAsks = askArray.slice(0, numOrders);
+
+        var bidVolume = 0;
+        var askVolume = 0;
+        for (var i = 0; i < numOrders; i++) {
+          bidVolume += parseFloat(arrayBids[i].volume);
+          askVolume += parseFloat(arrayAsks[i].volume);
+        }
+        callback(err, {bidVolume: bidVolume, askVolume: askVolume});
       }
-      callback(err, {bidVolume: bidVolume, askVolume: askVolume});
-    });
+    );
   };
 
   this.getRecentTradeSummary = function getRecentTradeCount(numTrades, callback) {
@@ -39,12 +78,26 @@ function UtilsClass() {
       if (!result || !result.trades) return callback('Result unexpected');
       var arrayTrades = result.trades.slice(0, numTrades);
       var boughtCount = 0;
+      var boughtVolume = 0;
       var soldCount = 0;
+      var soldVolume = 0;
       for (var i = 0; i < numTrades; i++) {
-        if (arrayTrades[i].is_buy === true) boughtCount++;
-        else soldCount++;
+        if (arrayTrades[i].is_buy === true) {
+          boughtCount++;
+          boughtVolume += parseFloat(arrayTrades[i].volume);
+        }
+        else {
+          soldCount++;
+          soldVolume += parseFloat(arrayTrades[i].volume);
+        }
       }
-      callback(err, {boughtCount: boughtCount, soldCount: soldCount});
+      var returnObject = {
+        boughtCount: boughtCount,
+        boughtVolume: boughtVolume,
+        soldCount: soldCount,
+        soldVolume: soldVolume
+      };
+      callback(err, returnObject);
     });
   };
 

@@ -46,11 +46,11 @@ There are several commands which need to be run before one can merge into master
 ```
 
 ```
-'lint' - this command will make sure there are no linting errors
+todo: 'lint' - this command will make sure there are no linting errors
 ```
 
 ```
-'npm run coverage' - this command will generate coverage report
+todo: 'npm run coverage' - this command will generate coverage report
 ```
 
 

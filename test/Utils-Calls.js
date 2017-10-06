@@ -5,9 +5,21 @@ var transactionDetailsTest = require('../transactionDetails.js');
 describe('utils.js', function () {
 
   describe('getCurrentPrice()', function () {
-    it('should test that we get the latest trade price - expected behaviour', function (done) {
+    it('should test that we get the current price - expected behaviour', function (done) {
       this.timeout(5000);
       utilsTest.getCurrentPrice(function (err, data) {
+        should.not.exist(err);
+        should.exist(data);
+        data.should.be.an('Number');
+        done();
+      });
+    });
+  });
+
+  describe('getLastTicket()', function () {
+    it('should test that we get the latest trade price - expected behaviour', function (done) {
+      this.timeout(5000);
+      utilsTest.getLastTicket(function (err, data) {
         should.not.exist(err);
         should.exist(data);
         var lastTrade = parseFloat(data);
