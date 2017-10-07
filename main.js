@@ -202,7 +202,6 @@ function stateMachine(callback) {
       utils.getPendingOrders(transactionDetails.transactionDetails, function (err, result) {
         if (err) {
           console.error('Unexpected error 8: ' + err);
-          nextState = state.lookForBuy;
           return callback();
         }
 
@@ -214,7 +213,7 @@ function stateMachine(callback) {
           return callback();
         }
 
-
+        callback();
 
       });
       break;
