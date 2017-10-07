@@ -3,6 +3,7 @@ var async = require('async');
 var utils = require('./utils.js');
 var transactionDetails = require('./transactionDetails.js');
 
+//todo: add in these for the console logs
 var debugOption = false;
 var debugExclude = false;
 
@@ -56,7 +57,7 @@ function stateMachine(callback) {
           return callback();
         }
         console.log('Debug1: ' + JSON.stringify(result));
-        if ((result.pendingOrdersBid.length || result.pendingOrdersAsk.length) && debugExclude) {
+        if (result.pendingOrdersBid.length || result.pendingOrdersAsk.length) {
           console.log('pending orders');
           //todo: go to the appropriate state
           return callback();
@@ -198,6 +199,24 @@ function stateMachine(callback) {
       //todo: if it is empty, check the last bid and current price
       // if there is last bid above us, one up it unless its the current price
 
+      utils.getPendingOrders(transactionDetails.transactionDetails, function (err, result) {
+        if (err) {
+          console.error('Unexpected error 8: ' + err);
+          nextState = state.lookForBuy;
+          return callback();
+        }
+
+        console.log('Debug8: ' + JSON.stringify(result));
+        var pendingBids = result.pendingOrdersBid;
+        if (!pendingBids.length) {
+          console.log('array is empty, means the order has gone through');
+          nextState = state.lookForSell;
+          return callback();
+        }
+
+
+
+      });
       break;
   }
 }
