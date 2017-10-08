@@ -1,6 +1,6 @@
 var should = require('chai').should();
 var utilsTest = require('../utils.js');
-var transactionDetailsTest = require('../transactionDetails.js');
+var userDefinedTest = require('../userDefined.js');
 
 describe('utils.js', function () {
 
@@ -21,9 +21,7 @@ describe('utils.js', function () {
       this.timeout(5000);
       utilsTest.getLastTicket(function (err, data) {
         should.not.exist(err);
-        should.exist(data);
-        var lastTrade = parseFloat(data);
-        lastTrade.should.be.greaterThan(0);
+        should.exist(data.bid);
         done();
       });
     });
@@ -168,7 +166,7 @@ describe('utils.js', function () {
 
     it('should test the account balance - expected behaviour', function (done) {
       this.timeout(5000);
-      utilsTest.getAccountBalances(transactionDetailsTest.transactionDetails, function (err, data) {
+      utilsTest.getAccountBalances(userDefinedTest.transactionDetails, function (err, data) {
         should.not.exist(err);
         should.exist(data);
         should.exist(data.xbtBalance);
@@ -226,7 +224,7 @@ describe('utils.js', function () {
 
     it('should test the pending orders - expected behaviour', function (done) {
       this.timeout(5000);
-      utilsTest.getPendingOrders(transactionDetailsTest.transactionDetails, function (err, data) {
+      utilsTest.getPendingOrders(userDefinedTest.transactionDetails, function (err, data) {
         should.not.exist(err);
         should.exist(data);
         should.exist(data.pendingOrdersBid);
@@ -506,7 +504,7 @@ describe('utils.js', function () {
 
     it('should test the stop order - invalid orderID', function (done) {
       this.timeout(5000);
-      utilsTest.setStopOrder(transactionDetailsTest.transactionDetails, 'abcdefg', function (err, data) {
+      utilsTest.setStopOrder(userDefinedTest.transactionDetails, 'abcdefg', function (err, data) {
         should.exist(err);
         should.not.exist(data);
         err.should.eql('Invalid order_id param\n');
@@ -529,13 +527,13 @@ describe('utils.js', function () {
   describe('use cases', function () {
     it('should place buy order and then stop it - expected behaviour', function (done) {
       this.timeout(10000);
-      utilsTest.setBuyOrder(transactionDetailsTest.transactionDetails, '20', '0.0005', function (err, data) {
+      utilsTest.setBuyOrder(userDefinedTest.transactionDetails, '20', '0.0005', function (err, data) {
         should.not.exist(err);
         should.exist(data);
         var orderID = data;
         // At this point the post order is successful
         setTimeout(function () {
-          utilsTest.setStopOrder(transactionDetailsTest.transactionDetails, orderID, function (err, data) {
+          utilsTest.setStopOrder(userDefinedTest.transactionDetails, orderID, function (err, data) {
             should.not.exist(err);
             should.exist(data);
             data.should.eql(true);

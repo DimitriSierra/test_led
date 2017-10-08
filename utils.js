@@ -21,14 +21,14 @@ function UtilsClass() {
     luno.getTicker(function (err, result) {
       if (err) return callback(err);
       if (!result || !result.last_trade) return callback('Result unexpected');
-      callback(err, result.last_trade);
+      callback(err, {'bid': result.bid, 'ask': result.ask});
     });
   };
 
-  this.getOrderBookSummary = function getOrderBookSummary(numOrders, callback) {
-    if (numOrders == null) return callback('numOrders passed incorrectly');
-    if (!_.isInteger(numOrders)) return callback('numOrders not integer');
-    if (numOrders <= 0) return callback('numOrders not larger than 0');
+  this.getOrderBookSummary = function getOrderBookSummary(priceHistory, callback) {
+    if (priceHistory == null) return callback('numOrders passed incorrectly');
+    if (!_.isInteger(priceHistory)) return callback('numOrders not integer');
+    if (priceHistory <= 0) return callback('numOrders not larger than 0');
     luno.getOrderBook(function (err, result) {
         if (err) return callback(err);
         if (!result || !result.bids || !result.asks) return callback('Result unexpected');
@@ -44,6 +44,17 @@ function UtilsClass() {
           bidArray.push(result.bids[i]);
         }
 
+        var bidArrayFiltered = [];
+        for (var i = 0; i < bidArray.length; i++) {
+          if (parseInt(bidArray[0].price) - parseInt(bidArray[i].price) > priceHistory) continue;
+          bidArrayFiltered.push(bidArray[i]);
+        }
+
+        var bidVolume = 0;
+        for (var i = 0; i < bidArrayFiltered.length; i++) {
+          bidVolume += parseFloat(bidArrayFiltered[i].volume);
+        }
+
         var askArray = [];
         for (var i = 0; i < result.asks.length; i++) {
           if (i == result.asks.length - 1) continue;
@@ -55,16 +66,18 @@ function UtilsClass() {
           askArray.push(result.asks[i]);
         }
 
-        var arrayBids = bidArray.slice(0, numOrders);
-        var arrayAsks = askArray.slice(0, numOrders);
-
-        var bidVolume = 0;
-        var askVolume = 0;
-        for (var i = 0; i < numOrders; i++) {
-          bidVolume += parseFloat(arrayBids[i].volume);
-          askVolume += parseFloat(arrayAsks[i].volume);
+        var askArrayFiltered = [];
+        for (var i = 0; i < askArray.length; i++) {
+          if (parseInt(askArray[i].price) - parseInt(askArray[0].price) > priceHistory) continue;
+          askArrayFiltered.push(askArray[i]);
         }
-        callback(err, {bidVolume: bidVolume, askVolume: askVolume});
+
+        var askVolume = 0;
+        for (var i = 0; i < askArrayFiltered.length; i++) {
+          askVolume += parseFloat(askArrayFiltered[i].volume);
+        }
+
+        callback(err, {'bidVolume': bidVolume, 'askVolume': askVolume});
       }
     );
   };
@@ -92,10 +105,10 @@ function UtilsClass() {
         }
       }
       var returnObject = {
-        boughtCount: boughtCount,
-        boughtVolume: boughtVolume,
-        soldCount: soldCount,
-        soldVolume: soldVolume
+        'boughtCount': boughtCount,
+        'boughtVolume': boughtVolume,
+        'soldCount': soldCount,
+        'soldVolume': soldVolume
       };
       callback(err, returnObject);
     });
@@ -114,7 +127,7 @@ function UtilsClass() {
         if (result.balance[i].asset === 'XBT') xbtBalance += parseFloat(result.balance[i].balance);
         if (result.balance[i].asset === 'ZAR') zarBalance += parseFloat(result.balance[i].balance);
       }
-      callback(err, {xbtBalance: xbtBalance, zarBalance: zarBalance});
+      callback(err, {'xbtBalance': xbtBalance, 'zarBalance': zarBalance});
     });
   };
 
@@ -130,15 +143,17 @@ function UtilsClass() {
       for (var i = 0; i < result.orders.length; i++) {
         if (result.orders[i].state !== 'PENDING') continue;
         var tempObject = {
-          orderID: result.orders[i].order_id,
-          type: result.orders[i].type,
-          price: result.orders[i].limit_price,
-          volume: result.orders[i].limit_volume
+          'orderID': result.orders[i].order_id,
+          'type': result.orders[i].type,
+          'price': result.orders[i].limit_price,
+          'volume': result.orders[i].limit_volume,
+          'baseBTC': result.orders[i].base,
+          'counterZAR': result.orders[i].counter
         };
         if (tempObject.type === 'BID') pendingOrderArrayBid.push(tempObject);
         else pendingOrderArrayAsk.push(tempObject);
       }
-      callback(err, {pendingOrdersBid: pendingOrderArrayBid, pendingOrdersAsk: pendingOrderArrayAsk});
+      callback(err, {'pendingOrdersBid': pendingOrderArrayBid, 'pendingOrdersAsk': pendingOrderArrayAsk});
     });
   };
 

@@ -1,6 +1,6 @@
 var should = require('chai').should();
 var lunoTest = require('../luno.js');
-var transactionDetailsTest = require('../transactionDetails.js');
+var userDefinedTest = require('../userDefined.js');
 
 describe('luno.js', function () {
 
@@ -93,7 +93,7 @@ describe('luno.js', function () {
 
     it('should test the balance api call - expected behaviour', function (done) {
       this.timeout(5000);
-      lunoTest.getBalances(transactionDetailsTest.transactionDetails, function (err, data) {
+      lunoTest.getBalances(userDefinedTest.transactionDetails, function (err, data) {
         should.not.exist(err);
         should.exist(data);
         should.exist(data.balance);
@@ -124,7 +124,7 @@ describe('luno.js', function () {
 
     it('should test the balance api call - expected behaviour', function (done) {
       this.timeout(5000);
-      lunoTest.getListOrders(transactionDetailsTest.transactionDetails, function (err, data) {
+      lunoTest.getListOrders(userDefinedTest.transactionDetails, function (err, data) {
         should.not.exist(err);
         should.exist(data);
         should.exist(data.orders);
