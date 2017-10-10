@@ -1,6 +1,6 @@
 {
   "name": "@DimitriSierra/LunoApi",
-  "version": "0.0.0",
+  "version": "1.0.1",
   "description": "Command line utility to act as a bot for the luno exchange",
   "main": "main.js",
   "scripts": {

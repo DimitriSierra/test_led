@@ -131,10 +131,12 @@ function UtilsClass() {
     });
   };
 
-  this.getPendingOrders = function getPendingOrders(apiObject, callback) {
+  this.getPendingOrders = function getPendingOrders(apiObject, volumeFilter, callback) {
     if (!apiObject || !apiObject.keyID || !apiObject.secretID) {
       return callback('API Object passed incorrectly');
     }
+    if (!volumeFilter) return callback('volumeFilter passed incorrectly');
+    if (!_.isInteger(parseInt(volumeFilter))) return callback('volumeFilter invalid - not number string');
     luno.getListOrders(apiObject, function (err, result) {
       if (err) return callback(err);
       if (!result || !result.orders) return callback('Result unexpected');
@@ -148,11 +150,21 @@ function UtilsClass() {
           'price': result.orders[i].limit_price,
           'volume': result.orders[i].limit_volume,
           'baseBTC': result.orders[i].base,
-          'counterZAR': result.orders[i].counter
+          'counterZAR': result.orders[i].counter,
+          'timestamp': result.orders[i].creation_timestamp
         };
+        var iFilterVolume = parseFloat(volumeFilter);
+        var iVolume = parseFloat(tempObject.volume);
+        if (iVolume > iFilterVolume) continue;
         if (tempObject.type === 'BID') pendingOrderArrayBid.push(tempObject);
         else pendingOrderArrayAsk.push(tempObject);
       }
+      pendingOrderArrayBid.sort(function (a, b) {
+        return parseInt(a.timestamp) - parseInt(b.timestamp)
+      });
+      pendingOrderArrayAsk.sort(function (a, b) {
+        return parseInt(a.timestamp) - parseInt(b.timestamp)
+      });
       callback(err, {'pendingOrdersBid': pendingOrderArrayBid, 'pendingOrdersAsk': pendingOrderArrayAsk});
     });
   };
