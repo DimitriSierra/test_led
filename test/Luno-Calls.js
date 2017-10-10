@@ -1,8 +1,21 @@
 var should = require('chai').should();
 var lunoTest = require('../luno.js');
-var transactionDetailsTest = require('../transactionDetails.js');
+var userDefinedTest = require('../userDefined.js');
 
 describe('luno.js', function () {
+
+  describe('getCurrentPrice()', function () {
+    it('should get current price api call - expected behaviour', function (done) {
+      this.timeout(5000);
+      lunoTest.getCurrentBTCZAR(function (err, data) {
+        should.not.exist(err);
+        should.exist(data.body);
+        data.body.indexOf('btc_price').should.not.eql(-1);
+        data.body.indexOf('BTC/ZAR').should.not.eql(-1);
+        done();
+      });
+    });
+  });
 
   describe('getTicker()', function () {
     it('should test the ticker api call - expected behaviour', function (done) {
@@ -80,7 +93,7 @@ describe('luno.js', function () {
 
     it('should test the balance api call - expected behaviour', function (done) {
       this.timeout(5000);
-      lunoTest.getBalances(transactionDetailsTest.transactionDetails, function (err, data) {
+      lunoTest.getBalances(userDefinedTest.transactionDetails, function (err, data) {
         should.not.exist(err);
         should.exist(data);
         should.exist(data.balance);
@@ -111,7 +124,7 @@ describe('luno.js', function () {
 
     it('should test the balance api call - expected behaviour', function (done) {
       this.timeout(5000);
-      lunoTest.getListOrders(transactionDetailsTest.transactionDetails, function (err, data) {
+      lunoTest.getListOrders(userDefinedTest.transactionDetails, function (err, data) {
         should.not.exist(err);
         should.exist(data);
         should.exist(data.orders);

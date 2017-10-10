@@ -1,6 +1,14 @@
 var exec = require('child_process').exec;
+var request = require('request');
 
 function LunoClass() {
+  this.getCurrentBTCZAR = function getCurrentBTCZAR(callback) {
+    var url = 'https://www.luno.com/ajax/1/display_ticker';
+    request(url, function (error, resp) {
+      callback(error, resp);
+    });
+  };
+
   this.getTicker = function getTicker(callback) {
     var command = 'curl https://api.mybitx.com/api/1/ticker?pair=XBTZAR';
     exec(command, function (err, result) {
