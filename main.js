@@ -265,14 +265,14 @@ function stateMachine(callback) {
 
           //console.log('Debug 11: ' + JSON.stringify(result));
 
-          if (result.bid <= pendingOrders[0].price) {
+          if (result.bid <= pendingOrders.pop().price) {
             console.log('We are still at least on top of the order book');
             return callback();
           }
 
           console.log('We are no longer on top of the order book, and we not partially fil');
 
-          utils.setStopOrder(userDefined.transactionDetails, pendingOrders[0].orderID, function (err, result) {
+          utils.setStopOrder(userDefined.transactionDetails, pendingOrders.pop().orderID, function (err, result) {
             if (err) {
               console.error('Unexpected error 12: ' + err);
               return callback();
@@ -475,7 +475,7 @@ function stateMachine(callback) {
               return callback();
             }
 
-            if (!result||  result != true) {
+            if (!result || result != true) {
               console.error('Failed to stop the order ... ... ... : ' + result);
               return callback();
             }
