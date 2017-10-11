@@ -226,9 +226,13 @@ function stateMachine(callback) {
           return callback();
         }
 
+        console.log('Debug: ' + JSON.stringify(pendingOrders, null, 2));
+
         console.log('We have pending buy order');
 
-        if (pendingOrders.pop().baseBTC != 0) {
+        var lastPendingOrder = pendingOrders[pendingOrders.length - 1];
+
+        if (lastPendingOrder.baseBTC != 0) {
           // This means it has been partially filled
           utils.getLastTicket(function (err, result) {
             if (err) {
@@ -238,9 +242,9 @@ function stateMachine(callback) {
 
             //console.log('Debug 9: ' + JSON.stringify(result));
 
-            if (result.bid > pendingOrders.pop().price) {
+            if (result.bid > lastPendingOrder.price) {
               console.log('Someone has out bid us, stop the current order');
-              utils.setStopOrder(userDefined.transactionDetails, pendingOrders.pop().orderID, function (err, result) {
+              utils.setStopOrder(userDefined.transactionDetails, lastPendingOrder.orderID, function (err, result) {
                 if (err) {
                   console.error('Unexpected error 10: ' + err);
                   return callback();
@@ -274,14 +278,14 @@ function stateMachine(callback) {
 
           //console.log('Debug 11: ' + JSON.stringify(result));
 
-          if (result.bid <= pendingOrders.pop().price) {
+          if (result.bid <= lastPendingOrder.price) {
             console.log('We are still at least on top of the order book');
             return callback();
           }
 
           console.log('We are no longer on top of the order book, and we not partially fil');
 
-          utils.setStopOrder(userDefined.transactionDetails, pendingOrders.pop().orderID, function (err, result) {
+          utils.setStopOrder(userDefined.transactionDetails, lastPendingOrder.orderID, function (err, result) {
             if (err) {
               console.error('Unexpected error 12: ' + err);
               return callback();
@@ -455,7 +459,7 @@ function stateMachine(callback) {
 
         console.log('We have pending sell orders');
 
-        var lastSellPendingOrder = pendingOrders.pop();
+        var lastSellPendingOrder = pendingOrders[pendingOrders.length - 1];
 
         if (lastSellPendingOrder.baseBTC != 0) {
           // This means it has been partially filled
