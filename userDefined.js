@@ -9,6 +9,7 @@ function UserDefinedClass() {
   this.ratioBuy = 0.75;
   this.ratioSell = 0.50;
   this.hardLimit = 100;
+  this.ratioRepeat = 1;
 }
 
 var userDefinedModule = new UserDefinedClass();

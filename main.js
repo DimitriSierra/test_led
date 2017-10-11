@@ -19,6 +19,7 @@ var state = {
 };
 
 var lastBuyPrice = '';
+var ratioCounter = 0;
 
 cycleState();
 function cycleState() {
@@ -101,10 +102,18 @@ function stateMachine(callback) {
 
         if (ratio < userDefined.ratioBuy) {
           console.log('Ratio is not correct to buy: ' + ratio.toFixed(2));
+          ratioCounter = 0;
           return callback();
         }
 
-        console.log('Ratio is correct to buy: ' + ratio.toFixed(2));
+        console.log('Ratio is correct to buy: ' + ratio.toFixed(2) + ' RatioCounter: ' + ratioCounter);
+
+        if (ratioCounter < userDefined.ratioRepeat) {
+          ratioCounter++;
+          return callback();
+        }
+        ratioCounter = 0;
+
         nextState = state.buy;
         callback();
       });
@@ -385,6 +394,7 @@ function stateMachine(callback) {
             if (priceToSell < lastBuyPrice) {
               console.log('We want to sell lower than bought price');
               console.log('Setting hard limit and forgetting');
+              console.log('BuyPrice: ' + lastBuyPrice);
               priceToSell = parseInt(lastBuyPrice) + parseInt(userDefined.hardLimit);
               placeAndForget = true;
             }
