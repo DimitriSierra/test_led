@@ -40,6 +40,7 @@ function stateMachine(callback) {
     {
       console.log('State: startUp');
       nextState = state.lookForBuy;
+      return callback();
 
       // Check if we have any pending orders out
       utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
