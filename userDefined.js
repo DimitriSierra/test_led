@@ -1,7 +1,7 @@
 function UserDefinedClass() {
   this.transactionDetails = {
-    keyID: '-',
-    secretID: '-'
+    keyID: 'dpft9j8wfm9kv',
+    secretID: 'trDsDL6ynQ8-4Wvmxox-cWphASyUo3vZzzQDekdS1D4'
   };
   this.debug = false;
   this.tradingVolume = '0.001';
