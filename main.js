@@ -178,14 +178,14 @@ function stateMachine(callback) {
                 return callback();
               }
 
-              if (!result || !result.order_id) {
+              if (!result) {
                 console.error('Buy Order not set correctly...');
                 nextState = state.lookForBuy;
                 return callback();
               }
 
               //console.log('Debug 7: ' + JSON.stringify(result));
-              console.log('Buy order has been set... monitor it now');
+              console.log('Buy order has been set... monitor it now: ' + result);
               lastBuyPrice = priceToBuy;
               nextState = state.monitorBuy;
               callback();
@@ -235,13 +235,13 @@ function stateMachine(callback) {
                   return callback();
                 }
 
-                if (!result || !result.success || result.success != true) {
-                  console.log('Failed to stop the order, trying again');
+                if (!result || result != true) {
+                  console.log('Failed to stop the order, trying again: ' + result);
                   return callback();
                 }
 
                 //console.log('Debug 10: ' + JSON.stringify(result));
-                console.log('We stopped the order successfully, look for buy');
+                console.log('We stopped the order successfully, look for buy: ' + result);
                 nextState = state.lookForBuy;
                 callback();
               });
@@ -276,12 +276,12 @@ function stateMachine(callback) {
               return callback();
             }
 
-            if (!result || !result.success || result.success != true) {
-              console.error('Failed to stop order ...');
+            if (!result || result != true) {
+              console.error('Failed to stop order ... : ' + result);
               return callback();
             }
 
-            console.log('Order Stopped Successfully');
+            console.log('Order Stopped Successfully: ' + result);
 
             //console.log('Debug 12: ' + JSON.stringify(result));
             nextState = state.lookForBuy;
@@ -398,13 +398,13 @@ function stateMachine(callback) {
                 return callback();
               }
 
-              if (!result || !result.order_id) {
+              if (!result) {
                 console.error('Failed to set sell order...');
                 nextState = state.lookForSell;
                 return callback();
               }
 
-              console.log('Sell order has been set... monitor it now');
+              console.log('Sell order has been set... monitor it now: ' + result);
 
               if (placeAndForget == true) {
                 console.log('We have set hard limit, looking for buy again');
@@ -473,12 +473,12 @@ function stateMachine(callback) {
               return callback();
             }
 
-            if (!result || !result.success || result.success != true) {
-              console.error('Failed to stop the order ... ... ...');
+            if (!result||  result != true) {
+              console.error('Failed to stop the order ... ... ... : ' + result);
               return callback();
             }
 
-            console.log('Success stopping the sell order, look to sell again');
+            console.log('Success stopping the sell order, look to sell again: ' + result);
 
             //console.log('Debug 22: ' + JSON.stringify(result));
             nextState = state.lookForSell;
