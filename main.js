@@ -385,7 +385,7 @@ function stateMachine(callback) {
             if (priceToSell < lastBuyPrice) {
               console.log('We want to sell lower than bought price');
               console.log('Setting hard limit and forgetting');
-              priceToSell = lastBuyPrice + userDefined.hardLimit;
+              priceToSell = parseInt(lastBuyPrice) + parseInt(userDefined.hardLimit);
               placeAndForget = true;
             }
 
