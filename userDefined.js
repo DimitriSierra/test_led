@@ -6,7 +6,7 @@ function UserDefinedClass() {
   this.debug = false;
   this.tradingVolume = '0.001';
   this.orderRandHistory = 80;
-  this.ratioBuy = 0.80;
+  this.ratioBuy = 0.75;
   this.ratioSell = 0.50;
   this.hardLimit = 100;
 }
