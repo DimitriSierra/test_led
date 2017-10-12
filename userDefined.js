@@ -4,7 +4,7 @@ function UserDefinedClass() {
     secretID: 'RazZMEieTsbBCkBfvofLydrGyqMurXRsrNc8aMQ3D0g'
   };
   this.debug = false;
-  this.tradingVolume = '0.001';
+  this.tradingVolume = '0.01';
   this.orderRandHistory = 80;
   this.ratioBuy = 0.75;
   this.ratioSell = 0.50;
