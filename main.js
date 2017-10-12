@@ -226,7 +226,7 @@ function stateMachine(callback) {
           return callback();
         }
 
-        console.log('Debug: ' + JSON.stringify(pendingOrders, null, 2));
+        //console.log('Debug: ' + JSON.stringify(pendingOrders, null, 2));
 
         console.log('We have pending buy order');
 
