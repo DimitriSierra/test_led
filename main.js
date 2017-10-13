@@ -6,7 +6,7 @@ var userDefined = require('./userDefined.js');
 //todo: add in these for the console logs
 var debugOption = userDefined.debug;
 
-var nextState = 0;
+var nextState = 2;
 var state = {
   startUp: 0,
   tradeDirection: 1,
@@ -15,15 +15,18 @@ var state = {
   monitorBuy: 4,
   lookForSell: 5,
   sell: 6,
-  monitorSell: 7
+  monitorSell: 7,
+  sellPartial: 8
 };
 
 var lastBuyPrice = '';
 var lastSellPrice = '';
 var tradeProfit = 0;
 var ratioCounter = 0;
+var partialAmount = userDefined.tradingVolume;
 
 cycleState();
+
 function cycleState() {
   async.series([
     // Cycle through the state machine
@@ -39,11 +42,8 @@ function cycleState() {
 
 function stateMachine(callback) {
   switch (nextState) {
-    case state.startUp:
-    {
+    case state.startUp: {
       console.log('State: startUp');
-      nextState = state.lookForBuy;
-      return callback();
 
       // Check if we have any pending orders out
       utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
@@ -87,8 +87,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.lookForBuy:
-    {
+    case state.lookForBuy: {
       console.log('State: lookForBuy');
       utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
         if (err) {
@@ -122,8 +121,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.buy:
-    {
+    case state.buy: {
       console.log('State: buy');
       utils.getAccountBalances(userDefined.transactionDetails, function (err, result) {
         if (err) {
@@ -209,8 +207,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.monitorBuy:
-    {
+    case state.monitorBuy: {
       console.log('State: monitorBuy');
       utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
         if (err) {
@@ -258,8 +255,10 @@ function stateMachine(callback) {
                 }
 
                 //console.log('Debug 10: ' + JSON.stringify(result));
-                console.log('We stopped the order successfully, look for buy: ' + result);
-                nextState = state.lookForBuy;
+                console.log('We stopped the order successfully, look for sell: ' + result);
+                partialAmount = parseFloat(lastPendingOrder.baseBTC);
+                if (partialAmount < parseFloat(userDefined.tradingVolume) / 2) nextState = state.sellPartial;
+                else nextState = state.lookForSell;
                 callback();
               });
               return;
@@ -309,8 +308,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.lookForSell:
-    {
+    case state.lookForSell: {
       console.log('State: lookForSell');
       utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
         if (err) {
@@ -336,8 +334,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.sell:
-    {
+    case state.sell: {
       console.log('State: sell');
       utils.getAccountBalances(userDefined.transactionDetails, function (err, result) {
         if (err) {
@@ -366,6 +363,8 @@ function stateMachine(callback) {
           console.log('Current Price: ' + currentPrice);
 
           var volumeToSell = parseFloat(userDefined.tradingVolume);
+
+          if (partialAmount != volumeToSell) volumeToSell = partialAmount;
 
           if (volumeToSell > parseFloat(currentXbtBalance)) {
             console.log('Not enough bitcoins to sell pre defined volume, selling what we have: ' + currentXbtBalance);
@@ -442,8 +441,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.monitorSell:
-    {
+    case state.monitorSell: {
       console.log('State: monitorSell');
       utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
         if (err) {
@@ -458,9 +456,16 @@ function stateMachine(callback) {
         if (pendingOrders.length == 0) {
           console.log('We have no pending orders, sell must have gone through, look for buy');
           tradeProfit += parseFloat(lastSellPrice) - parseFloat(lastBuyPrice);
+          console.log('***********************************************************************************************');
+          console.log('************************************************');
           console.log('Expected Profit: ' + tradeProfit.toFixed(2));
+          console.log('************************************************');
+          console.log('***********************************************************************************************');
+
+          partialAmount = userDefined.tradingVolume;
           nextState = state.lookForBuy;
-          return callback();
+          fs.writeFile('calculations.txt', tradeProfit.toFixed(2).toString(), 'utf8', callback);
+          return;
         }
 
         console.log('We have pending sell orders');
@@ -511,8 +516,27 @@ function stateMachine(callback) {
       break;
     }
 
-    default:
-    {
+    case state.sellPartial: {
+      var priceToSell = parseInt(lastBuyPrice) + parseInt(userDefined.hardLimit);
+      utils.setSellOrder(userDefined.transactionDetails, priceToSell, partialAmount, function (err, result) {
+        if (err) {
+          console.error('Unexpected error 23: ' + err);
+          return callback();
+        }
+
+        if (!result) {
+          console.error('Failed to set sell order...');
+          return callback();
+        }
+
+        console.log('Set partial hard limit');
+        nextState = state.lookForBuy;
+        callback();
+      });
+      break;
+    }
+
+    default: {
       console.log('State: unknown (' + nextState + ')');
       callback();
       break;
