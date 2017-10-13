@@ -19,6 +19,8 @@ var state = {
 };
 
 var lastBuyPrice = '';
+var lastSellPrice = '';
+var tradeProfit = 0;
 var ratioCounter = 0;
 
 cycleState();
@@ -226,7 +228,7 @@ function stateMachine(callback) {
           return callback();
         }
 
-        console.log('Debug: ' + JSON.stringify(pendingOrders, null, 2));
+        //console.log('Debug: ' + JSON.stringify(pendingOrders, null, 2));
 
         console.log('We have pending buy order');
 
@@ -428,6 +430,8 @@ function stateMachine(callback) {
                 return callback();
               }
 
+              lastSellPrice = parseInt(priceToSell);
+
               //console.log('Debug 17: ' + JSON.stringify(result));
               nextState = state.monitorSell;
               callback();
@@ -453,6 +457,8 @@ function stateMachine(callback) {
 
         if (pendingOrders.length == 0) {
           console.log('We have no pending orders, sell must have gone through, look for buy');
+          tradeProfit += parseFloat(lastSellPrice) - parseFloat(lastBuyPrice);
+          console.log('Expected Profit: ' + tradeProfit.toFixed(2));
           nextState = state.lookForBuy;
           return callback();
         }
