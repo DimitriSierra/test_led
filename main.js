@@ -464,7 +464,8 @@ function stateMachine(callback) {
 
           partialAmount = userDefined.tradingVolume;
           nextState = state.lookForBuy;
-          fs.writeFile('calculations.txt', tradeProfit.toFixed(2).toString(), 'utf8', callback);
+          //fs.writeFile('calculations.txt', tradeProfit.toFixed(2).toString(), 'utf8', callback);
+          callback();
           return;
         }
 
