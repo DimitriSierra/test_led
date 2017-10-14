@@ -464,8 +464,7 @@ function stateMachine(callback) {
 
           partialAmount = userDefined.tradingVolume;
           nextState = state.lookForBuy;
-          fs.writeFile('calculations.txt', tradeProfit.toFixed(2).toString(), 'utf8', callback);
-          return;
+          return callback();
         }
 
         console.log('We have pending sell orders');
