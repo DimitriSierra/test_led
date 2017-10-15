@@ -188,6 +188,14 @@ function UtilsClass() {
     if (!iOrderVolume) return callback('OrderVolume invalid');
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'BID', function (err, result) {
+      console.log('Luno5: ' + err);
+      console.log('~~~~');
+      console.log('Luno6: ' + JSON.stringify(err));
+      console.log('@@@@@');
+      console.log('Luno7: ' + result);
+      console.log('%%%%');
+      console.log('Luno8: ' + JSON.stringify(result));
+      console.log('!!!!!');
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
       if (!result.order_id) return callback('Result unexpected');
