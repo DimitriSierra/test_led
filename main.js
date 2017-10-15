@@ -532,6 +532,7 @@ function stateMachine(callback) {
 
         console.log('Set partial hard limit');
         nextState = state.lookForBuy;
+        partialAmount = underDefined.tradingVolume;
         callback();
       });
       break;
