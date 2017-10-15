@@ -63,6 +63,14 @@ function LunoClass() {
     command += ' -d type=' + bidOrAsk + ' -d volume=' + orderVolume + ' -d price=' + orderPrice;
     command += ' https://api.mybitx.com/api/1/postorder';
     exec(command, function (err, result) {
+      console.log('Luno1: ' + err);
+      console.log('---');
+      console.log('Luno2: ' + JSON.stringify(err));
+      console.log('******');
+      console.log('Luno3: ' + result);
+      console.log('$$$$$');
+      console.log('Luno4: ' + JSON.stringify(result));
+      console.log('^^^^^^^');
       if (err) return callback(err);
       if (result.indexOf('Unauthorized') !== -1) return callback(result);
       result = JSON.parse(result);

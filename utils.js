@@ -6,7 +6,8 @@ function UtilsClass() {
   this.getCurrentPrice = function getCurrentPrice(callback) {
     luno.getCurrentBTCZAR(function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.body) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.body) return callback('Result unexpected');
       var foundBTCZAR = result.body.indexOf('BTC/ZAR ');
       if (foundBTCZAR == -1) return callback('Body unexpected');
       var stringBTC = result.body.substring(foundBTCZAR);
@@ -20,7 +21,8 @@ function UtilsClass() {
   this.getLastTicket = function getLastTicket(callback) {
     luno.getTicker(function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.last_trade) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.last_trade) return callback('Result unexpected');
       callback(err, {'bid': result.bid, 'ask': result.ask});
     });
   };
@@ -31,8 +33,9 @@ function UtilsClass() {
     if (priceHistory <= 0) return callback('numOrders not larger than 0');
     luno.getOrderBook(function (err, result) {
         if (err) return callback(err);
-        if (!result || !result.bids || !result.asks) return callback('Result unexpected');
-
+        if (!result) return callback('Result unknown');
+        if (!result.bids) return callback('Result unexpected - bids');
+        if (!result.asks) return callback('Result unexpected - asks');
         var bidArray = [];
         for (var i = 0; i < result.bids.length; i++) {
           if (i == result.bids.length - 1) continue;
@@ -88,7 +91,8 @@ function UtilsClass() {
     if (numTrades <= 0) return callback('numTrades not larger than 0');
     luno.getTrades(function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.trades) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.trades) return callback('Result unexpected');
       var arrayTrades = result.trades.slice(0, numTrades);
       var boughtCount = 0;
       var boughtVolume = 0;
@@ -120,7 +124,8 @@ function UtilsClass() {
     }
     luno.getBalances(apiObject, function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.balance) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.balance) return callback('Result unexpected');
       var xbtBalance = 0;
       var zarBalance = 0;
       for (var i = 0; i < result.balance.length; i++) {
@@ -139,7 +144,8 @@ function UtilsClass() {
     if (!_.isInteger(parseInt(volumeFilter))) return callback('volumeFilter invalid - not number string');
     luno.getListOrders(apiObject, function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.orders) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.orders) return callback('Result unexpected');
       var pendingOrderArrayBid = [];
       var pendingOrderArrayAsk = [];
       for (var i = 0; i < result.orders.length; i++) {
@@ -182,8 +188,17 @@ function UtilsClass() {
     if (!iOrderVolume) return callback('OrderVolume invalid');
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'BID', function (err, result) {
+      console.log('Luno5: ' + err);
+      console.log('~~~~');
+      console.log('Luno6: ' + JSON.stringify(err));
+      console.log('@@@@@');
+      console.log('Luno7: ' + result);
+      console.log('%%%%');
+      console.log('Luno8: ' + JSON.stringify(result));
+      console.log('!!!!!');
       if (err) return callback(err);
-      if (!result || !result.order_id) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.order_id) return callback('Result unexpected');
       callback(err, result.order_id);
     });
   };
@@ -202,7 +217,8 @@ function UtilsClass() {
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'ASK', function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.order_id) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.order_id) return callback('Result unexpected');
       callback(err, result.order_id);
     });
   };
@@ -212,7 +228,8 @@ function UtilsClass() {
     if (!orderID) return callback('OrderID passed incorrectly');
     luno.setStopAnOrder(apiObject, orderID, function (err, result) {
       if (err) return callback(err);
-      if (!result || !result.success) return callback('Result unexpected');
+      if (!result) return callback('Result unknown');
+      if (!result.success) return callback('Result unexpected');
       callback(err, result.success);
     });
   };
