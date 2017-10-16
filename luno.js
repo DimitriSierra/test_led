@@ -12,7 +12,7 @@ function LunoClass() {
   this.getTicker = function getTicker(callback) {
     var command = 'curl https://api.mybitx.com/api/1/ticker?pair=XBTZAR';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      if (err) return callback(err);
       result = JSON.parse(result);
       callback(err, result);
     });
@@ -21,7 +21,7 @@ function LunoClass() {
   this.getOrderBook = function getOrderBook(callback) {
     var command = 'curl https://api.mybitx.com/api/1/orderbook?pair=XBTZAR';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      if (err) return callback(err);
       result = JSON.parse(result);
       callback(err, result);
     });
@@ -30,7 +30,7 @@ function LunoClass() {
   this.getTrades = function getTrades(callback) {
     var command = 'curl https://api.mybitx.com/api/1/trades?pair=XBTZAR';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      if (err) return callback(err);
       result = JSON.parse(result);
       callback(err, result);
     });
@@ -40,7 +40,7 @@ function LunoClass() {
     var command = 'curl -u ' + apiObject.keyID + ':' + apiObject.secretID;
     command += ' https://api.mybitx.com/api/1/balance';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      if (err) return callback(err);
       if (result.indexOf('Unauthorized') !== -1) return callback(result);
       result = JSON.parse(result);
       callback(err, result);
@@ -51,7 +51,7 @@ function LunoClass() {
     var command = 'curl -u ' + apiObject.keyID + ':' + apiObject.secretID;
     command += ' https://api.mybitx.com/api/1/listorders';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      if (err) return callback(err);
       if (result.indexOf('Unauthorized') !== -1) return callback(result);
       result = JSON.parse(result);
       callback(err, result);
@@ -63,7 +63,15 @@ function LunoClass() {
     command += ' -d type=' + bidOrAsk + ' -d volume=' + orderVolume + ' -d price=' + orderPrice;
     command += ' https://api.mybitx.com/api/1/postorder';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      console.log('Luno1: ' + err);
+      console.log('---');
+      console.log('Luno2: ' + JSON.stringify(err));
+      console.log('******');
+      console.log('Luno3: ' + result);
+      console.log('$$$$$');
+      console.log('Luno4: ' + JSON.stringify(result));
+      console.log('^^^^^^^');
+      if (err) return callback(err);
       if (result.indexOf('Unauthorized') !== -1) return callback(result);
       result = JSON.parse(result);
       callback(err, result);
@@ -74,7 +82,7 @@ function LunoClass() {
     var command = 'curl -u ' + apiObject.keyID + ':' + apiObject.secretID + ' -X POST -d order_id=';
     command += orderID + ' https://api.mybitx.com/api/1/stoporder';
     exec(command, function (err, result) {
-      err = JSON.parse(err);
+      if (err) return callback(err);
       if (result.indexOf('Unauthorized') !== -1) return callback(result);
       if (result.indexOf('Invalid order') !== -1) return callback(result);
       result = JSON.parse(result);

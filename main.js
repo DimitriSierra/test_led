@@ -6,7 +6,7 @@ var userDefined = require('./userDefined.js');
 //todo: add in these for the console logs
 var debugOption = userDefined.debug;
 
-var nextState = 0;
+var nextState = 2;
 var state = {
   startUp: 0,
   tradeDirection: 1,
@@ -15,10 +15,18 @@ var state = {
   monitorBuy: 4,
   lookForSell: 5,
   sell: 6,
-  monitorSell: 7
+  monitorSell: 7,
+  sellPartial: 8
 };
 
+var lastBuyPrice = '';
+var lastSellPrice = '';
+var tradeProfit = 0;
+var ratioCounter = 0;
+var partialAmount = userDefined.tradingVolume;
+
 cycleState();
+
 function cycleState() {
   async.series([
     // Cycle through the state machine
@@ -34,12 +42,11 @@ function cycleState() {
 
 function stateMachine(callback) {
   switch (nextState) {
-    case state.startUp:
-    {
+    case state.startUp: {
       console.log('State: startUp');
 
       // Check if we have any pending orders out
-      utils.getPendingOrders(userDefined.transactionDetails, function (err, result) {
+      utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
         if (err) {
           console.error('Unexpected error 1: ' + err);
           // Stay in the current state
@@ -80,8 +87,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.lookForBuy:
-    {
+    case state.lookForBuy: {
       console.log('State: lookForBuy');
       utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
         if (err) {
@@ -97,18 +103,25 @@ function stateMachine(callback) {
 
         if (ratio < userDefined.ratioBuy) {
           console.log('Ratio is not correct to buy: ' + ratio.toFixed(2));
+          ratioCounter = 0;
           return callback();
         }
 
-        console.log('Ratio is correct to buy: ' + ratio.toFixed(2));
+        console.log('Ratio is correct to buy: ' + ratio.toFixed(2) + ' RatioCounter: ' + ratioCounter);
+
+        if (ratioCounter < userDefined.ratioRepeat) {
+          ratioCounter++;
+          return callback();
+        }
+        ratioCounter = 0;
+
         nextState = state.buy;
         callback();
       });
       break;
     }
 
-    case state.buy:
-    {
+    case state.buy: {
       console.log('State: buy');
       utils.getAccountBalances(userDefined.transactionDetails, function (err, result) {
         if (err) {
@@ -176,8 +189,15 @@ function stateMachine(callback) {
                 return callback();
               }
 
+              if (!result) {
+                console.error('Buy Order not set correctly...');
+                nextState = state.lookForBuy;
+                return callback();
+              }
+
               //console.log('Debug 7: ' + JSON.stringify(result));
-              console.log('Buy order has been set... monitor it now');
+              console.log('Buy order has been set... monitor it now: ' + result);
+              lastBuyPrice = priceToBuy;
               nextState = state.monitorBuy;
               callback();
             });
@@ -187,10 +207,9 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.monitorBuy:
-    {
+    case state.monitorBuy: {
       console.log('State: monitorBuy');
-      utils.getPendingOrders(userDefined.transactionDetails, function (err, result) {
+      utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
         if (err) {
           console.error('Unexpected error 8: ' + err);
           return callback();
@@ -206,10 +225,13 @@ function stateMachine(callback) {
           return callback();
         }
 
-        console.log('We have pending buy order')
+        //console.log('Debug: ' + JSON.stringify(pendingOrders, null, 2));
 
-        //todo: we need to handle multiple pending orders here
-        if (pendingOrders[0].baseBTC != 0) {
+        console.log('We have pending buy order');
+
+        var lastPendingOrder = pendingOrders[pendingOrders.length - 1];
+
+        if (lastPendingOrder.baseBTC != 0) {
           // This means it has been partially filled
           utils.getLastTicket(function (err, result) {
             if (err) {
@@ -219,17 +241,24 @@ function stateMachine(callback) {
 
             //console.log('Debug 9: ' + JSON.stringify(result));
 
-            if (result.bid > pendingOrders[0].price) {
+            if (result.bid > lastPendingOrder.price) {
               console.log('Someone has out bid us, stop the current order');
-              utils.setStopOrder(userDefined.transactionDetails, pendingOrders[0].orderID, function (err, result) {
+              utils.setStopOrder(userDefined.transactionDetails, lastPendingOrder.orderID, function (err, result) {
                 if (err) {
                   console.error('Unexpected error 10: ' + err);
                   return callback();
                 }
 
+                if (!result || result != true) {
+                  console.log('Failed to stop the order, trying again: ' + result);
+                  return callback();
+                }
+
                 //console.log('Debug 10: ' + JSON.stringify(result));
-                console.log('We stopped the order successfully, look for buy');
-                nextState = state.lookForBuy;
+                console.log('We stopped the order successfully, look for sell: ' + result);
+                partialAmount = parseFloat(lastPendingOrder.baseBTC);
+                if (partialAmount < parseFloat(userDefined.tradingVolume) / 2) nextState = state.sellPartial;
+                else nextState = state.lookForSell;
                 callback();
               });
               return;
@@ -250,20 +279,25 @@ function stateMachine(callback) {
 
           //console.log('Debug 11: ' + JSON.stringify(result));
 
-          if (result.bid <= pendingOrders[0].price) {
+          if (result.bid <= lastPendingOrder.price) {
             console.log('We are still at least on top of the order book');
             return callback();
           }
 
           console.log('We are no longer on top of the order book, and we not partially fil');
 
-          utils.setStopOrder(userDefined.transactionDetails, pendingOrders[0].orderID, function (err, result) {
+          utils.setStopOrder(userDefined.transactionDetails, lastPendingOrder.orderID, function (err, result) {
             if (err) {
               console.error('Unexpected error 12: ' + err);
               return callback();
             }
 
-            console.log('Order Stopped Successfully')
+            if (!result || result != true) {
+              console.error('Failed to stop order ... : ' + result);
+              return callback();
+            }
+
+            console.log('Order Stopped Successfully: ' + result);
 
             //console.log('Debug 12: ' + JSON.stringify(result));
             nextState = state.lookForBuy;
@@ -274,8 +308,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.lookForSell:
-    {
+    case state.lookForSell: {
       console.log('State: lookForSell');
       utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
         if (err) {
@@ -301,8 +334,7 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.sell:
-    {
+    case state.sell: {
       console.log('State: sell');
       utils.getAccountBalances(userDefined.transactionDetails, function (err, result) {
         if (err) {
@@ -331,6 +363,8 @@ function stateMachine(callback) {
           console.log('Current Price: ' + currentPrice);
 
           var volumeToSell = parseFloat(userDefined.tradingVolume);
+
+          if (partialAmount != volumeToSell) volumeToSell = partialAmount;
 
           if (volumeToSell > parseFloat(currentXbtBalance)) {
             console.log('Not enough bitcoins to sell pre defined volume, selling what we have: ' + currentXbtBalance);
@@ -361,19 +395,43 @@ function stateMachine(callback) {
             if (lastAsk == currentPrice + 1) priceToSell = lastAsk.toString();
             else priceToSell = (lastAsk - 1).toString();
 
+            var placeAndForget = false;
+            if (priceToSell < lastBuyPrice) {
+              console.log('We want to sell lower than bought price');
+              console.log('Setting hard limit and forgetting');
+              console.log('BuyPrice: ' + lastBuyPrice);
+              priceToSell = parseInt(lastBuyPrice) + parseInt(userDefined.hardLimit);
+              placeAndForget = true;
+            }
+
             // if we get here we can one up and place sell order
             console.log('Current Price: ' + currentPrice);
             console.log('Placing Sell Order At: ' + priceToSell);
 
-            utils.setSellOrder(userDefined.transactionDetails, priceToSell, volumeToSell.toString(), function (err, result) {
+            utils.setSellOrder(userDefined.transactionDetails, priceToSell.toString(), volumeToSell.toString(), function (err, result) {
               if (err) {
                 console.error('Unexpected error 17: ' + err);
                 nextState = state.lookForSell;
                 return callback();
               }
 
+              if (!result) {
+                console.error('Failed to set sell order...');
+                nextState = state.lookForSell;
+                return callback();
+              }
+
+              console.log('Sell order has been set... monitor it now: ' + result);
+
+              if (placeAndForget == true) {
+                console.log('We have set hard limit, looking for buy again');
+                nextState = state.lookForBuy;
+                return callback();
+              }
+
+              lastSellPrice = parseInt(priceToSell);
+
               //console.log('Debug 17: ' + JSON.stringify(result));
-              console.log('Sell order has been set... monitor it now');
               nextState = state.monitorSell;
               callback();
             });
@@ -383,10 +441,9 @@ function stateMachine(callback) {
       break;
     }
 
-    case state.monitorSell:
-    {
+    case state.monitorSell: {
       console.log('State: monitorSell');
-      utils.getPendingOrders(userDefined.transactionDetails, function (err, result) {
+      utils.getPendingOrders(userDefined.transactionDetails, userDefined.tradingVolume, function (err, result) {
         if (err) {
           console.error('Unexpected error 18: ' + err);
           return callback();
@@ -398,51 +455,28 @@ function stateMachine(callback) {
 
         if (pendingOrders.length == 0) {
           console.log('We have no pending orders, sell must have gone through, look for buy');
+          tradeProfit += parseFloat(lastSellPrice) - parseFloat(lastBuyPrice);
+          console.log('***********************************************************************************************');
+          console.log('************************************************');
+          console.log('Expected Profit: ' + tradeProfit.toFixed(2));
+          console.log('************************************************');
+          console.log('***********************************************************************************************');
+
+          partialAmount = userDefined.tradingVolume;
           nextState = state.lookForBuy;
-          return callback();
+          //fs.writeFile('calculations.txt', tradeProfit.toFixed(2).toString(), 'utf8', callback);
+          callback();
+          return;
         }
 
         console.log('We have pending sell orders');
 
-        //todo: we need to handle multiple pending orders here
-        var lastSellPendingOrder = pendingOrders.pop();
+        var lastSellPendingOrder = pendingOrders[pendingOrders.length - 1];
 
         if (lastSellPendingOrder.baseBTC != 0) {
           // This means it has been partially filled
-          utils.getLastTicket(function (err, result) {
-            if (err) {
-              console.error('Unexpected error 19: ' + err);
-              return callback();
-            }
-
-            console.log('We have partially filled sell order')
-
-            //console.log('Debug 19: ' + JSON.stringify(result));
-
-            //todo: forcing this to never hit, how do we wanna handle a sell order thats partial
-            if ((result.ask < lastSellPendingOrder.price) && 0) {
-              console.log('Someone has out bid us, stop the current order');
-              utils.setStopOrder(userDefined.transactionDetails, lastSellPendingOrder.orderID, function (err, result) {
-                if (err) {
-                  console.error('Unexpected error 20: ' + err);
-                  return callback();
-                }
-
-                console.log('Debug 20: ' + JSON.stringify(result));
-                console.log('We stopped the order successfully, look for buy');
-                //todo: dont think this is correct
-                nextState = state.lookForBuy;
-                callback();
-              });
-              return;
-            }
-
-            console.log('We are waiting for the sell order to completely fill');
-
-            //console.log('we are still at least on the top of the order book');
-            callback();
-          });
-          return;
+          console.log('We are waiting for the sell order to completely fill');
+          return callback();
         }
 
         console.log('Our sell order is not partially filed');
@@ -467,7 +501,12 @@ function stateMachine(callback) {
               return callback();
             }
 
-            console.log('Success stopping the sell order, look to sell again');
+            if (!result || result != true) {
+              console.error('Failed to stop the order ... ... ... : ' + result);
+              return callback();
+            }
+
+            console.log('Success stopping the sell order, look to sell again: ' + result);
 
             //console.log('Debug 22: ' + JSON.stringify(result));
             nextState = state.lookForSell;
@@ -478,8 +517,28 @@ function stateMachine(callback) {
       break;
     }
 
-    default:
-    {
+    case state.sellPartial: {
+      var priceToSell = parseInt(lastBuyPrice) + parseInt(userDefined.hardLimit);
+      utils.setSellOrder(userDefined.transactionDetails, priceToSell, partialAmount, function (err, result) {
+        if (err) {
+          console.error('Unexpected error 23: ' + err);
+          return callback();
+        }
+
+        if (!result) {
+          console.error('Failed to set sell order...');
+          return callback();
+        }
+
+        console.log('Set partial hard limit');
+        nextState = state.lookForBuy;
+        partialAmount = userDefined.tradingVolume;
+        callback();
+      });
+      break;
+    }
+
+    default: {
       console.log('State: unknown (' + nextState + ')');
       callback();
       break;
