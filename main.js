@@ -475,7 +475,9 @@ function stateMachine(callback) {
 
         if (lastSellPendingOrder.baseBTC != 0) {
           // This means it has been partially filled
-          console.log('We are waiting for the sell order to completely fill');
+          //console.log('We are waiting for the sell order to completely fill');
+          console.log('Order started selling - not waiting for it to fill - LookForBuy');
+          nextState = state.lookForBuy;
           return callback();
         }
 
