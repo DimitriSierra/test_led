@@ -22,11 +22,11 @@ function UtilsClass() {
     luno.getTicker(function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      console.log('Debug1: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error1: ' + err.message);
+        console.error('Error1: ' + result);
         return callback(result);
       }
       if (!result.ask) return callback('Result ask unexpected');
@@ -42,11 +42,11 @@ function UtilsClass() {
     luno.getOrderBook(function (err, result) {
         if (err) return callback(err);
         if (!result) return callback('Result unknown');
-        //console.log('Debug2: ' + JSON.stringify(result));
         try {
           result = JSON.parse(result);
         } catch (err) {
           console.error('Error2: ' + err.message);
+          console.error('Error2: ' + result);
           return callback(result);
         }
         if (!result.bids) return callback('Result unexpected - bids');
@@ -95,7 +95,12 @@ function UtilsClass() {
           askVolume += parseFloat(askArrayFiltered[i].volume);
         }
 
-        callback(err, {'bidVolume': bidVolume, 'askVolume': askVolume});
+        callback(err, {
+          'bidVolume': bidVolume,
+          'topBidVolume': bidArrayFiltered[0],
+          'askVolume': askVolume,
+          'topAskVolume': askArrayFiltered[0]
+        });
       }
     );
   };
@@ -107,11 +112,11 @@ function UtilsClass() {
     luno.getTrades(function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      //console.log('Debug3: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error3: ' + err.message);
+        console.error('Error3: ' + result);
         return callback(result);
       }
       if (!result.trades) return callback('Result unexpected');
@@ -148,11 +153,11 @@ function UtilsClass() {
     luno.getBalances(apiObject, function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      //console.log('Debug4: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error4: ' + err.message);
+        console.error('Error4: ' + result);
         return callback(result);
       }
       if (!result.balance) return callback('Result unexpected');
@@ -173,11 +178,11 @@ function UtilsClass() {
     luno.getListOrders(apiObject, function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      //console.log('Debug5: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error5: ' + err.message);
+        console.error('Error5: ' + result);
         return callback(result);
       }
       if (!result.orders) return callback('Result unexpected');
@@ -250,7 +255,9 @@ function UtilsClass() {
     ordersWithID.sort(function (a, b) {
       return parseInt(a.timestamp) - parseInt(b.timestamp)
     });
-    callback(null, {'orderDetails': ordersWithID});
+    if (ordersWithID.length == 0) return callback('No ID found');
+    if (ordersWithID.length != 1) return callback('More than one ID found');
+    callback(null, {'orderDetails': ordersWithID[0]});
   };
 
   this.setBuyOrder = function setBuyOrder(apiObject, orderPrice, orderVolume, callback) {
@@ -262,17 +269,17 @@ function UtilsClass() {
     if (!_.isInteger(iOrderPrice)) return callback('OrderPrice invalid - not number string');
     if (iOrderPrice < 10) return callback('OrderPrice invalid - smaller than 10');
     // orderVolume evaluation
-    var iOrderVolume = parseFloat(orderVolume);
+    var iOrderVolume = parseFloat(orderVolume).toFixed(5);
     if (!iOrderVolume) return callback('OrderVolume invalid');
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'BID', function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      //console.log('Debug6: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error6: ' + err.message);
+        console.error('Error6: ' + result);
         return callback(result);
       }
       if (result.error_code == 'ErrInsufficientBalance') return callback(result.error_code);
@@ -290,17 +297,17 @@ function UtilsClass() {
     if (!_.isInteger(iOrderPrice)) return callback('OrderPrice invalid - not number string');
     if (iOrderPrice < 10) return callback('OrderPrice invalid - smaller than 10');
     // orderVolume evaluation
-    var iOrderVolume = parseFloat(orderVolume);
+    var iOrderVolume = parseFloat(orderVolume).toFixed(5);
     if (!iOrderVolume) return callback('OrderVolume invalid');
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'ASK', function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      //console.log('Debug7: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error7: ' + err.message);
+        console.error('Error7: ' + result);
         return callback(result);
       }
       if (result.error_code) return callback(result.error_code);
@@ -315,11 +322,11 @@ function UtilsClass() {
     luno.setStopAnOrder(apiObject, orderID, function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      //console.log('Debug8: ' + JSON.stringify(result));
       try {
         result = JSON.parse(result);
       } catch (err) {
         console.error('Error8: ' + err.message);
+        console.error('Error8: ' + result);
         return callback(result);
       }
       if (!result.success) return callback('Result unexpected: ' + JSON.stringify(result));
