@@ -178,7 +178,7 @@ function stateMachine(callback) {
             // This means it has been partially filled
             var floatLastBidPrice = parseFloat(lastBidPrice);
             var floatBuyPrice = parseFloat(orderBuyDetails.price);
-            if (floatLastBidPrice > floatBuyPrice) {
+            if (floatLastBidPrice > floatBuyPrice + 1) {
               console.log('Someone has out bid us, stop the current order');
               utils.setStopOrder(userDefined.transactionDetails, buyOrderID, function (err, result) {
                 if (err) {
