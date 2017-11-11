@@ -171,7 +171,7 @@ function UtilsClass() {
     });
   };
 
-  this.getOrders = function getPendingOrders(apiObject, callback) {
+  this.getOrders = function getOrders(apiObject, callback) {
     if (!apiObject || !apiObject.keyID || !apiObject.secretID) {
       return callback('API Object passed incorrectly');
     }
@@ -209,23 +209,20 @@ function UtilsClass() {
     });
   };
 
-  this.getPendingOrders = function getPendingOrders(orderArray, callback) {
-    if (!_.isArray(orderArray)) return callback('OrderArray passed incorrectly');
-    var pendingOrderArrayBid = [];
-    var pendingOrderArrayAsk = [];
-    for (var i = 0; i < orderArray.length; i++) {
-      if (orderArray[i].state !== 'PENDING') continue;
-      if (orderArray[i].type === 'BID') pendingOrderArrayBid.push(orderArray[i]);
-      else pendingOrderArrayAsk.push(orderArray[i]);
-    }
-    pendingOrderArrayBid.sort(function (a, b) {
-      return parseInt(a.timestamp) - parseInt(b.timestamp)
-    });
-    pendingOrderArrayAsk.sort(function (a, b) {
-      return parseInt(a.timestamp) - parseInt(b.timestamp)
-    });
-    callback(null, {'pendingOrdersBid': pendingOrderArrayBid, 'pendingOrdersAsk': pendingOrderArrayAsk});
-  };
+  this.getPendingOrders = function getPendingOrders(apiObject, callback) {
+    if (!apiObject || !apiObject.keyID || !apiObject.secretID) return callback('API Object passed incorrectly');
+    luno.getOrderBookPending(apiObject, function (err, result) {
+      if (err) return callback(err);
+      if (!result) return callback('Result unknown');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error9: ' + err.message);
+        console.error('Error9: ' + result);
+        return callback(result);
+      }
+      callback(err, result);
+    }); };
 
   this.getCompleteOrders = function getCompleteOrders(orderArray, callback) {
     if (!_.isArray(orderArray)) return callback('OrderArray passed incorrectly');

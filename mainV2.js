@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+var fs = require('fs');
 var async = require('async');
 var utils = require('./utils.js');
 var userDefined = require('./userDefined.js');
@@ -79,7 +80,7 @@ function stateMachine(callback) {
             }
             currentBtcPriceBuy = result;
             if (currentBtcPriceBuy * userDefined.tradingVolume >= currentZarBalance) {
-              console.log('Not enough rands to buy bitcoin');
+              console.error('Not enough rands to buy bitcoin');
               return cb(true);
             }
             return cb();
@@ -178,7 +179,7 @@ function stateMachine(callback) {
             // This means it has been partially filled
             var floatLastBidPrice = parseFloat(lastBidPrice);
             var floatBuyPrice = parseFloat(orderBuyDetails.price);
-            if (floatLastBidPrice > floatBuyPrice + 1) {
+            if (floatLastBidPrice > floatBuyPrice + 1) { //todo see if we want this
               console.log('Someone has out bid us, stop the current order');
               utils.setStopOrder(userDefined.transactionDetails, buyOrderID, function (err, result) {
                 if (err) {
@@ -296,8 +297,12 @@ function stateMachine(callback) {
             volumeToSell = parseFloat(orderBuyDetailsSell.baseBTC) - parseFloat(orderBuyDetailsSell.feeBaseBTC);
             var floatBtcBalance = parseFloat(currentBtcBalance);
             if (volumeToSell > floatBtcBalance) {
-              console.log('Not enough bitcoins to sell what we bought');
-              console.log('Going back to buy, leaving bitcoins');
+              console.error('Not enough bitcoins to sell what we bought');
+              console.error('Going back to buy, leaving bitcoins');
+              return cb(state.buy);
+            }
+            if (volumeToSell < 0.0005) {
+              console.error('Volume to small to sell, buying again');
               return cb(state.buy);
             }
             return cb();
@@ -320,7 +325,7 @@ function stateMachine(callback) {
           });
         },
         function (cb) {
-          var floatFeeAmount = parseFloat(orderBuyDetailsSell.feeCounterZAR);
+          var floatFeeAmount = parseFloat(orderBuyDetailsSell.price * orderBuyDetailsSell.feeBaseBTC);
           var floatLastAskPrice = parseFloat(lastAskPrice);
           var floatCurrentBtcPrice = parseFloat(currentBtcPrice);
           if (floatLastAskPrice == floatCurrentBtcPrice + 1) priceToSell = lastAskPrice;
@@ -329,13 +334,13 @@ function stateMachine(callback) {
           var floatPriceToSell = parseFloat(priceToSell);
           var floatPriceBought = parseFloat(orderBuyDetailsSell.price);
           if (floatPriceToSell < floatPriceBought) {
-            console.log('Want to sell lower, setting hardlimit and forgetting');
+            console.error('Want to sell lower, setting hardlimit and forgetting');
             priceToSell = parseInt(floatPriceBought) + parseInt(userDefined.hardLimit);
             placeAndForget = true;
           }
           if (floatFeeAmount > 0) {
-            console.log('We got a fee, adding the fee to our hard limit');
-            priceToSell += parseInt(floatFeeAmount);
+            console.error('We got a fee, adding the fee to our hard limit');
+            priceToSell = parseInt(floatPriceBought) + parseInt(userDefined.hardLimit) + parseInt(floatFeeAmount);
             placeAndForget = true;
           }
           priceToSell = priceToSell.toString();
@@ -355,7 +360,7 @@ function stateMachine(callback) {
             sellOrderID = result;
             console.log('Sell order has been set ... monitor it now');
             if (placeAndForget === true) {
-              console.log('Not monitoring, was a hard limit/fee based');
+              console.error('Not monitoring, was a hard limit/fee based');
               return cb(state.buy);
             }
             return cb(state.monitorSell);
@@ -398,7 +403,59 @@ function stateMachine(callback) {
         function (cb) {
           if (orderAskDetails.state === 'COMPLETE') {
             console.log('Sell Order has gone through, look for buy');
-            return cb(state.buy);
+            var accountBalance = 0;
+            var pendingOrders = {};
+            var pendingAmount = 0;
+            var expectedAmount = 0;
+            var fileAmount = '';
+            async.series([
+              function (callback) {
+                utils.getAccountBalances(userDefined.transactionDetails, function (err, result) {
+                  if (err) {
+                    console.error(err);
+                    return callback();
+                  }
+                  accountBalance = result.zarBalance;
+                  callback();
+                });
+              },
+              function (callback) {
+                utils.getPendingOrders(userDefined.transactionDetails, function (err, result) {
+                  if (err) {
+                    console.error(err);
+                    return callback();
+                  }
+                  pendingOrders = result;
+                  callback();
+                });
+              },
+              function (callback) {
+                var pendingArray = pendingOrders.orders;
+                for (var i = 0; i < pendingArray.length; i++) {
+                  if (pendingArray[i].type != 'ASK') continue;
+                  pendingAmount += parseFloat(pendingArray[i].limit_price * pendingArray[i].limit_volume - pendingArray[i].counter);
+                }
+                expectedAmount = accountBalance + pendingAmount;
+                fileAmount = 'Account Balance:' + '\t' + accountBalance.toFixed(2);
+                fileAmount += '\t';
+                fileAmount += 'Pending Balance:' + '\t' + pendingAmount.toFixed(2);
+                fileAmount += '\t';
+                fileAmount += 'ExpectedTotal:' + '\t' + expectedAmount.toFixed(2);
+                fileAmount += '\t';
+                fileAmount += 'ExpectedProfit:' + '\t' + (expectedAmount - userDefined.inputAmount).toFixed(2);
+                fileAmount += '\n';
+                callback();
+              },
+              function (callback) {
+                fs.appendFile('mrTommy.txt', fileAmount, function (err) {
+                  if (err) console.error('Fail to write amount');
+                  callback();
+                });
+              }
+            ], function () {
+              return cb(state.buy);
+            });
+            return;
           }
           console.log('Sell Order is still pending');
           return cb();
@@ -417,7 +474,7 @@ function stateMachine(callback) {
           var filledValue = parseFloat(orderAskDetails.baseBTC);
           if (filledValue > 0) {
             // This means it has been partially filled
-            console.log('Sell order started selling - not waiting for it to fill - go buy again');
+            console.error('Sell order started selling - not waiting for it to fill - go buy again');
             return cb(state.buy);
           }
           var floatLastAskPrice = parseFloat(lastAskPriceMonitorSell);

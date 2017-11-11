@@ -20,6 +20,12 @@ function LunoClass() {
     exec(command, {maxBuffer: Infinity}, callback);
   };
 
+  this.getOrderBookPending = function getOrderBookPending(apiObject, callback) {
+    var command = 'curl -u ' + apiObject.keyID + ':' + apiObject.secretID;
+    command += ' https://api.mybitx.com/api/1/listorders?state=PENDING';
+    exec(command, {maxBuffer: Infinity}, callback);
+  };
+
   this.getTrades = function getTrades(callback) {
     var command = 'curl https://api.mybitx.com/api/1/trades?pair=XBTZAR';
     exec(command, {maxBuffer: Infinity}, callback);
