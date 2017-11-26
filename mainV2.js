@@ -340,7 +340,12 @@ function stateMachine(callback) {
           }
           if (floatFeeAmount > 0) {
             console.error('We got a fee, adding the fee to our hard limit');
-            priceToSell = parseInt(floatPriceBought) + parseInt(userDefined.hardLimit) + parseInt(floatFeeAmount);
+			console.log(JSON.stringify(orderBuyDetailsSell));
+			var diffLoss = orderBuyDetailsSell.baseBTC - orderBuyDetailsSell.feeBaseBTC;
+			console.log(JSON.stringify(diffLoss));
+			var diffMakeUp = diffLoss * orderBuyDetailsSell.price;
+			console.log(JSON.stringify(diffMakeUp));
+            priceToSell = parseInt(floatPriceBought) + parseInt(userDefined.hardLimit) + parseInt(floatFeeAmount) + parseInt(diffMakeUp);
             placeAndForget = true;
           }
           priceToSell = priceToSell.toString();
@@ -430,6 +435,10 @@ function stateMachine(callback) {
                 });
               },
               function (callback) {
+                if (!pendingOrders.orders) {
+                  console.log('could not find array to write');
+                  return callback();
+                }
                 var pendingArray = pendingOrders.orders;
                 for (var i = 0; i < pendingArray.length; i++) {
                   if (pendingArray[i].type != 'ASK') continue;
