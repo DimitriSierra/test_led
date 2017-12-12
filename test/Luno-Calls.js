@@ -3,7 +3,6 @@ var lunoTest = require('../luno.js');
 var userDefinedTest = require('../userDefined.js');
 
 describe('luno.js', function () {
-
   describe('getCurrentPrice()', function () {
     it('should get current price api call - expected behaviour', function (done) {
       this.timeout(5000);
@@ -21,6 +20,7 @@ describe('luno.js', function () {
     it('should test the ticker api call - expected behaviour', function (done) {
       this.timeout(5000);
       lunoTest.getTicker(function (err, data) {
+        data = JSON.parse(data);
         should.not.exist(err);
         should.exist(data);
         should.exist(data.ask);
@@ -39,6 +39,7 @@ describe('luno.js', function () {
     it('should test the order book api call - expected behaviour', function (done) {
       this.timeout(5000);
       lunoTest.getOrderBook(function (err, data) {
+        data = JSON.parse(data);
         should.not.exist(err);
         should.exist(data);
         should.exist(data.timestamp);
@@ -63,6 +64,7 @@ describe('luno.js', function () {
     it('should test the trades api call - expected behaviour', function (done) {
       this.timeout(5000);
       lunoTest.getTrades(function (err, data) {
+        data = JSON.parse(data);
         should.not.exist(err);
         should.exist(data);
         should.exist(data.trades);
@@ -80,20 +82,10 @@ describe('luno.js', function () {
   });
 
   describe('getBalances()', function () {
-    it('should test the balance api call - invalid details', function (done) {
-      this.timeout(5000);
-      var details = {keyID: 'username', secretID: 'password'};
-      lunoTest.getBalances(details, function (err, data) {
-        should.exist(err);
-        should.not.exist(data);
-        err.should.eql('Unauthorized\n');
-        done();
-      });
-    });
-
     it('should test the balance api call - expected behaviour', function (done) {
       this.timeout(5000);
       lunoTest.getBalances(userDefinedTest.transactionDetails, function (err, data) {
+        data = JSON.parse(data);
         should.not.exist(err);
         should.exist(data);
         should.exist(data.balance);
@@ -111,20 +103,10 @@ describe('luno.js', function () {
   });
 
   describe('getListOrders()', function () {
-    it('should test the orders api call - invalid details', function (done) {
-      this.timeout(5000);
-      var details = {keyID: 'username', secretID: 'password'};
-      lunoTest.getListOrders(details, function (err, data) {
-        should.exist(err);
-        should.not.exist(data);
-        err.should.eql('Unauthorized\n');
-        done();
-      });
-    });
-
     it('should test the balance api call - expected behaviour', function (done) {
       this.timeout(5000);
       lunoTest.getListOrders(userDefinedTest.transactionDetails, function (err, data) {
+        data = JSON.parse(data);
         should.not.exist(err);
         should.exist(data);
         should.exist(data.orders);
@@ -140,31 +122,4 @@ describe('luno.js', function () {
       });
     });
   });
-
-  describe('setPostLimitOrder()', function () {
-    it('should test the post order api call - invalid details', function (done) {
-      this.timeout(5000);
-      var details = {keyID: 'username', secretID: 'password'};
-      lunoTest.setPostLimitOrder(details, '10000.00', '0.5', 'ASK', function (err, data) {
-        should.exist(err);
-        should.not.exist(data);
-        err.should.eql('Unauthorized\n');
-        done();
-      });
-    });
-  });
-
-  describe('setStopAnOrder()', function () {
-    it('should test the stop order api call - invalid details', function (done) {
-      this.timeout(5000);
-      var details = {keyID: 'username', secretID: 'password'};
-      lunoTest.setStopAnOrder(details, 'abcde', function (err, data) {
-        should.exist(err);
-        should.not.exist(data);
-        err.should.eql('Unauthorized\n');
-        done();
-      });
-    });
-  });
-
 });

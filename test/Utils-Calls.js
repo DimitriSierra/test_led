@@ -178,10 +178,10 @@ describe('utils.js', function () {
 
   });
 
-  describe('getPendingOrders()', function () {
+  describe.only('getOrders()', function () {
     it('should test the pending orders - no transaction detail', function (done) {
       this.timeout(5000);
-      utilsTest.getPendingOrders(null, function (err, data) {
+      utilsTest.getOrders(null, null, function (err, data) {
         should.exist(err);
         should.not.exist(data);
         err.should.eql('API Object passed incorrectly');
@@ -192,7 +192,7 @@ describe('utils.js', function () {
     it('should test the pending orders - no keyID', function (done) {
       this.timeout(5000);
       var details = {secretID: 'password'};
-      utilsTest.getPendingOrders(details, function (err, data) {
+      utilsTest.getOrders(details, null, function (err, data) {
         should.exist(err);
         should.not.exist(data);
         err.should.eql('API Object passed incorrectly');
@@ -203,7 +203,7 @@ describe('utils.js', function () {
     it('should test the pending orders - no secretID', function (done) {
       this.timeout(5000);
       var details = {keyID: 'username'};
-      utilsTest.getPendingOrders(details, function (err, data) {
+      utilsTest.getOrders(details, null, function (err, data) {
         should.exist(err);
         should.not.exist(data);
         err.should.eql('API Object passed incorrectly');
@@ -214,7 +214,7 @@ describe('utils.js', function () {
     it('should test the pending orders - invalid details', function (done) {
       this.timeout(5000);
       var details = {keyID: 'username', secretID: 'password'};
-      utilsTest.getPendingOrders(details, function (err, data) {
+      utilsTest.getOrders(details, '0.05', function (err, data) {
         should.exist(err);
         should.not.exist(data);
         err.should.eql('Unauthorized\n');
@@ -224,13 +224,11 @@ describe('utils.js', function () {
 
     it('should test the pending orders - expected behaviour', function (done) {
       this.timeout(5000);
-      utilsTest.getPendingOrders(userDefinedTest.transactionDetails, function (err, data) {
+      utilsTest.getOrders(userDefinedTest.transactionDetails, '0.005', function (err, data) {
         should.not.exist(err);
         should.exist(data);
-        should.exist(data.pendingOrdersBid);
-        should.exist(data.pendingOrdersAsk);
-        data.pendingOrdersBid.should.be.instanceOf(Array);
-        data.pendingOrdersAsk.should.be.instanceOf(Array);
+        should.exist(data.orders);
+        data.orders.should.be.instanceOf(Array);
         done();
       });
     });

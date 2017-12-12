@@ -22,7 +22,15 @@ function UtilsClass() {
     luno.getTicker(function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      if (!result.last_trade) return callback('Result unexpected');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error1: ' + err.message);
+        console.error('Error1: ' + result);
+        return callback(result);
+      }
+      if (!result.ask) return callback('Result ask unexpected');
+      if (!result.bid) return callback('Result bid unexpected');
       callback(err, {'bid': result.bid, 'ask': result.ask});
     });
   };
@@ -34,6 +42,13 @@ function UtilsClass() {
     luno.getOrderBook(function (err, result) {
         if (err) return callback(err);
         if (!result) return callback('Result unknown');
+        try {
+          result = JSON.parse(result);
+        } catch (err) {
+          console.error('Error2: ' + err.message);
+          console.error('Error2: ' + result);
+          return callback(result);
+        }
         if (!result.bids) return callback('Result unexpected - bids');
         if (!result.asks) return callback('Result unexpected - asks');
         var bidArray = [];
@@ -80,7 +95,12 @@ function UtilsClass() {
           askVolume += parseFloat(askArrayFiltered[i].volume);
         }
 
-        callback(err, {'bidVolume': bidVolume, 'askVolume': askVolume});
+        callback(err, {
+          'bidVolume': bidVolume,
+          'topBidVolume': bidArrayFiltered[0],
+          'askVolume': askVolume,
+          'topAskVolume': askArrayFiltered[0]
+        });
       }
     );
   };
@@ -92,7 +112,15 @@ function UtilsClass() {
     luno.getTrades(function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error3: ' + err.message);
+        console.error('Error3: ' + result);
+        return callback(result);
+      }
       if (!result.trades) return callback('Result unexpected');
+
       var arrayTrades = result.trades.slice(0, numTrades);
       var boughtCount = 0;
       var boughtVolume = 0;
@@ -125,6 +153,13 @@ function UtilsClass() {
     luno.getBalances(apiObject, function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error4: ' + err.message);
+        console.error('Error4: ' + result);
+        return callback(result);
+      }
       if (!result.balance) return callback('Result unexpected');
       var xbtBalance = 0;
       var zarBalance = 0;
@@ -136,43 +171,90 @@ function UtilsClass() {
     });
   };
 
-  this.getPendingOrders = function getPendingOrders(apiObject, volumeFilter, callback) {
+  this.getOrders = function getOrders(apiObject, callback) {
     if (!apiObject || !apiObject.keyID || !apiObject.secretID) {
       return callback('API Object passed incorrectly');
     }
-    if (!volumeFilter) return callback('volumeFilter passed incorrectly');
-    if (!_.isInteger(parseInt(volumeFilter))) return callback('volumeFilter invalid - not number string');
     luno.getListOrders(apiObject, function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error5: ' + err.message);
+        console.error('Error5: ' + result);
+        return callback(result);
+      }
       if (!result.orders) return callback('Result unexpected');
-      var pendingOrderArrayBid = [];
-      var pendingOrderArrayAsk = [];
+      var ordersArray = [];
       for (var i = 0; i < result.orders.length; i++) {
-        if (result.orders[i].state !== 'PENDING') continue;
         var tempObject = {
           'orderID': result.orders[i].order_id,
           'type': result.orders[i].type,
           'price': result.orders[i].limit_price,
           'volume': result.orders[i].limit_volume,
           'baseBTC': result.orders[i].base,
+          'feeBaseBTC': result.orders[i].fee_base,
           'counterZAR': result.orders[i].counter,
-          'timestamp': result.orders[i].creation_timestamp
+          'feeCounterZAR': result.orders[i].fee_counter,
+          'timestamp': result.orders[i].creation_timestamp,
+          'state': result.orders[i].state
         };
-        var iFilterVolume = parseFloat(volumeFilter);
-        var iVolume = parseFloat(tempObject.volume);
-        if (iVolume > iFilterVolume) continue;
-        if (tempObject.type === 'BID') pendingOrderArrayBid.push(tempObject);
-        else pendingOrderArrayAsk.push(tempObject);
+        ordersArray.push(tempObject);
       }
-      pendingOrderArrayBid.sort(function (a, b) {
+      ordersArray.sort(function (a, b) {
         return parseInt(a.timestamp) - parseInt(b.timestamp)
       });
-      pendingOrderArrayAsk.sort(function (a, b) {
-        return parseInt(a.timestamp) - parseInt(b.timestamp)
-      });
-      callback(err, {'pendingOrdersBid': pendingOrderArrayBid, 'pendingOrdersAsk': pendingOrderArrayAsk});
+      callback(err, {'orders': ordersArray});
     });
+  };
+
+  this.getPendingOrders = function getPendingOrders(apiObject, callback) {
+    if (!apiObject || !apiObject.keyID || !apiObject.secretID) return callback('API Object passed incorrectly');
+    luno.getOrderBookPending(apiObject, function (err, result) {
+      if (err) return callback(err);
+      if (!result) return callback('Result unknown');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error9: ' + err.message);
+        console.error('Error9: ' + result);
+        return callback(result);
+      }
+      callback(err, result);
+    }); };
+
+  this.getCompleteOrders = function getCompleteOrders(orderArray, callback) {
+    if (!_.isArray(orderArray)) return callback('OrderArray passed incorrectly');
+    var completeOrderArrayBid = [];
+    var completeOrderArrayAsk = [];
+    for (var i = 0; i < orderArray.length; i++) {
+      if (orderArray[i].state !== 'COMPLETE') continue;
+      if (orderArray[i].type === 'BID') completeOrderArrayBid.push(orderArray[i]);
+      else completeOrderArrayAsk.push(orderArray[i]);
+    }
+    completeOrderArrayBid.sort(function (a, b) {
+      return parseInt(a.timestamp) - parseInt(b.timestamp)
+    });
+    completeOrderArrayAsk.sort(function (a, b) {
+      return parseInt(a.timestamp) - parseInt(b.timestamp)
+    });
+    callback(null, {'completeOrdersBid': completeOrderArrayBid, 'completeOrdersAsk': completeOrderArrayAsk});
+  };
+
+  this.getOrderDetailsByID = function getOrderDetailsByID(orderArray, orderID, callback) {
+    if (!_.isArray(orderArray)) return callback('OrderArray passed incorrectly');
+    var ordersWithID = [];
+    for (var i = 0; i < orderArray.length; i++) {
+      if (orderArray[i].orderID != orderID) continue;
+      ordersWithID.push(orderArray[i]);
+    }
+    ordersWithID.sort(function (a, b) {
+      return parseInt(a.timestamp) - parseInt(b.timestamp)
+    });
+    if (ordersWithID.length == 0) return callback('No ID found');
+    if (ordersWithID.length != 1) return callback('More than one ID found');
+    callback(null, {'orderDetails': ordersWithID[0]});
   };
 
   this.setBuyOrder = function setBuyOrder(apiObject, orderPrice, orderVolume, callback) {
@@ -184,21 +266,21 @@ function UtilsClass() {
     if (!_.isInteger(iOrderPrice)) return callback('OrderPrice invalid - not number string');
     if (iOrderPrice < 10) return callback('OrderPrice invalid - smaller than 10');
     // orderVolume evaluation
-    var iOrderVolume = parseFloat(orderVolume);
+    var iOrderVolume = parseFloat(orderVolume).toFixed(5);
     if (!iOrderVolume) return callback('OrderVolume invalid');
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'BID', function (err, result) {
-      console.log('Luno5: ' + err);
-      console.log('~~~~');
-      console.log('Luno6: ' + JSON.stringify(err));
-      console.log('@@@@@');
-      console.log('Luno7: ' + result);
-      console.log('%%%%');
-      console.log('Luno8: ' + JSON.stringify(result));
-      console.log('!!!!!');
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      if (!result.order_id) return callback('Result unexpected');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error6: ' + err.message);
+        console.error('Error6: ' + result);
+        return callback(result);
+      }
+      if (result.error_code == 'ErrInsufficientBalance') return callback(result.error_code);
+      if (!result.order_id) return callback('Result unexpected: ' + JSON.stringify(result));
       callback(err, result.order_id);
     });
   };
@@ -212,13 +294,21 @@ function UtilsClass() {
     if (!_.isInteger(iOrderPrice)) return callback('OrderPrice invalid - not number string');
     if (iOrderPrice < 10) return callback('OrderPrice invalid - smaller than 10');
     // orderVolume evaluation
-    var iOrderVolume = parseFloat(orderVolume);
+    var iOrderVolume = parseFloat(orderVolume).toFixed(5);
     if (!iOrderVolume) return callback('OrderVolume invalid');
     if (iOrderVolume < 0.0005) return callback('OrderVolume invalid - smaller than 0.005');
     luno.setPostLimitOrder(apiObject, orderPrice, orderVolume, 'ASK', function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      if (!result.order_id) return callback('Result unexpected');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error7: ' + err.message);
+        console.error('Error7: ' + result);
+        return callback(result);
+      }
+      if (result.error_code) return callback(result.error_code);
+      if (!result.order_id) return callback('Result unexpected: ' + JSON.stringify(result));
       callback(err, result.order_id);
     });
   };
@@ -229,7 +319,14 @@ function UtilsClass() {
     luno.setStopAnOrder(apiObject, orderID, function (err, result) {
       if (err) return callback(err);
       if (!result) return callback('Result unknown');
-      if (!result.success) return callback('Result unexpected');
+      try {
+        result = JSON.parse(result);
+      } catch (err) {
+        console.error('Error8: ' + err.message);
+        console.error('Error8: ' + result);
+        return callback(result);
+      }
+      if (!result.success) return callback('Result unexpected: ' + JSON.stringify(result));
       callback(err, result.success);
     });
   };
