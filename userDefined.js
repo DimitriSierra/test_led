@@ -10,6 +10,10 @@ function UserDefinedClass() {
   this.hardLimit = 100;
   this.ratioRepeat = 1;
   this.inputAmount = 10000;
+
+  this.tradingGapVolume = '0.01';
+  this.gapRange = 300;
+  this.feePercentMakeUp = 1.01;
 }
 
 var userDefinedModule = new UserDefinedClass();
