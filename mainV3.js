@@ -28,7 +28,7 @@ function cycleState() {
     // The loop is finished, re run the state machine in 10 seconds
     setTimeout(function () {
       cycleState();
-    }, 10000);
+    }, 100);
   });
 }
 
@@ -131,6 +131,7 @@ function stateMachine(callback) {
               return cb(true);
             }
             buyOrderID = result;
+            console.log('OrderID: ' + buyOrderID + " - 134");
             console.log('Buy order has been set ... monitor it now');
             return cb(state.monitorBuy);
           });
@@ -222,6 +223,7 @@ function stateMachine(callback) {
           return cb();
         },
         function (cb) {
+          console.log('OrderID: ' + buyOrderID + ' - 225');
           utils.setStopOrder(userDefined.transactionDetails, buyOrderID, function (err, result) {
             if (err) {
               console.error('Unexpected error 11: ' + err);
