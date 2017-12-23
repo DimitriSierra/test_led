@@ -28,7 +28,7 @@ function cycleState() {
     // The loop is finished, re run the state machine in 10 seconds
     setTimeout(function () {
       cycleState();
-    }, 100);
+    }, userDefined.cycleDelay);
   });
 }
 
@@ -59,16 +59,19 @@ function stateMachine(callback) {
             var orderTotal = parseFloat(result.bidVolume) + parseFloat(result.askVolume);
             var ratio = parseFloat(result.bidVolume) / orderTotal;
             if (ratio < userDefined.ratioBuy) {
-              console.log('State: Buy - Ratio: ' + ratio.toFixed(2));
-              ratioBuyCounter = 0;
-              return cb(true);
+              setTimeout(function(){
+                console.log('State: Buy - Ratio: ' + ratio.toFixed(2));
+                ratioBuyCounter = 0;
+                cb(true);
+                },userDefined.ratioDelay);
+              return;
             }
-            console.log('State: Buy - Ratio: ' + ratio.toFixed(2) + ' RatioCounter: ' + ratioBuyCounter);
+            console.log('State: Buy - Ratio: ' + ratio.toFixed(2) + ' RatioCounter: ' + ratioBuyCounter + ' of ' + userDefined.ratioRepeat);
             if (ratioBuyCounter < userDefined.ratioRepeat) {
               ratioBuyCounter++;
               return cb(true);
             }
-            ratioBuyCounter = 0;
+            ratioBuyCounter = ratioBuyCounter - 1;
             return cb();
           });
         },
@@ -92,8 +95,11 @@ function stateMachine(callback) {
             var tradingVolume = userDefined.tradingVolume;
             if (gapBuy) tradingVolume = userDefined.tradingGapVolume;
             if (currentBtcPriceBuy * tradingVolume >= currentZarBalance) {
-              console.error('Not enough rands to buy bitcoin');
-              return cb(true);
+              setTimeout(function(){
+                console.error('Not enough rands to buy bitcoin');
+                cb(true);
+              },userDefined.noCashDelay);
+              return;
             }
             return cb();
           });
