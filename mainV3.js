@@ -25,7 +25,7 @@ function cycleState() {
     // Cycle through the state machine
     stateMachine
   ], function () {
-    // The loop is finished, re run the state machine in 10 seconds
+    // The loop is finished, re run the state machine with defined delay
     setTimeout(function () {
       cycleState();
     }, userDefined.cycleDelay);
@@ -71,7 +71,7 @@ function stateMachine(callback) {
               ratioBuyCounter++;
               return cb(true);
             }
-            ratioBuyCounter = ratioBuyCounter - 1;
+            //ratioBuyCounter = 0;
             return cb();
           });
         },
@@ -105,7 +105,7 @@ function stateMachine(callback) {
           });
         },
         function (cb) {
-          ratioBuyCounter = 1;
+          //ratioBuyCounter = 1;
           utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
             if (err) {
               console.error('Unexpected error 4: ' + err);
@@ -125,6 +125,8 @@ function stateMachine(callback) {
         function (cb) {
           // If we get here, we can place the buy order
           console.log('LastBid: ' + lastBid + ' CurrentPrice: ' + currentBtcPriceBuy + ' PriceToBuy: ' + priceToBuy);
+          var startTime = new Date().getTime();
+          console.log('Time before placing ' + startTime);
           var tradingVolume = userDefined.tradingVolume;
           if (gapBuy) tradingVolume = userDefined.tradingGapVolume;
           utils.setBuyOrder(userDefined.transactionDetails, priceToBuy, tradingVolume, function (err, result) {
@@ -138,7 +140,9 @@ function stateMachine(callback) {
             }
             buyOrderID = result;
             console.log('OrderID: ' + buyOrderID + " - 134");
-            console.log('Buy order has been set ... monitor it now');
+            var placedTime = new Date().getTime();
+            var delay = placedTime - startTime;
+            console.log('Buy order has been set ... monitor it now ' + placedTime + '++' + delay);
             return cb(state.monitorBuy);
           });
         }

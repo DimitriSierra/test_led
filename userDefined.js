@@ -16,7 +16,7 @@ function UserDefinedClass() {
   this.feePercentMakeUp = 1.01;
 
   this.cycleDelay = 3000;
-  this.ratioDelay = 8000;
+  this.ratioDelay = 10000;
   this.noCashDelay = 60000;
 }
 
