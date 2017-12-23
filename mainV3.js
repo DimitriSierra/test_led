@@ -71,7 +71,7 @@ function stateMachine(callback) {
               ratioBuyCounter++;
               return cb(true);
             }
-            //ratioBuyCounter = 0;
+            
             return cb();
           });
         },
@@ -105,7 +105,7 @@ function stateMachine(callback) {
           });
         },
         function (cb) {
-          //ratioBuyCounter = 1;
+
           utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
             if (err) {
               console.error('Unexpected error 4: ' + err);

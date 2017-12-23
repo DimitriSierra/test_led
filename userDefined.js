@@ -1,7 +1,7 @@
 function UserDefinedClass() {
   this.transactionDetails = {
-    keyID: '-',
-    secretID: '-'
+    keyID: '',
+    secretID: ''
   };
   this.tradingVolume = '0.011';
   this.orderRandHistory = 80;
