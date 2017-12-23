@@ -39,6 +39,7 @@ function stateMachine(callback) {
       var currentBtcPriceBuy = 0;
       var lastBid = 0;
       var priceToBuy = 0;
+      var timeBuy = new Date().getTime();
       async.series([
         function (cb) {
           utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
@@ -52,6 +53,7 @@ function stateMachine(callback) {
             if (gap > userDefined.gapRange) {
               console.log('State: Buy - Gap: ' + gap);
               gapBuy = true;
+              timeBuy = new Date().getTime();
               return cb();
             }
             // If we get here, it is not gap buy, check the ratio
@@ -71,7 +73,7 @@ function stateMachine(callback) {
               ratioBuyCounter++;
               return cb(true);
             }
-            
+            timeBuy = new Date().getTime();
             return cb();
           });
         },
@@ -125,9 +127,15 @@ function stateMachine(callback) {
         function (cb) {
           // If we get here, we can place the buy order
           console.log('LastBid: ' + lastBid + ' CurrentPrice: ' + currentBtcPriceBuy + ' PriceToBuy: ' + priceToBuy);
+          var placeTime = new Date().getTime();
           var startTime = new Date().getTime();
-          console.log('Time before placing ' + startTime);
+          //console.log('Time before placing ' + startTime);
           var tradingVolume = userDefined.tradingVolume;
+          timeToPlace = placeTime - timeBuy;
+          if (timeToPlace > 2000){
+            console.log('Takes too long to place order - restarting: ' + timeToPlace);
+            return cb(true);
+          }
           if (gapBuy) tradingVolume = userDefined.tradingGapVolume;
           utils.setBuyOrder(userDefined.transactionDetails, priceToBuy, tradingVolume, function (err, result) {
             if (err) {
