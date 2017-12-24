@@ -39,7 +39,7 @@ function stateMachine(callback) {
       var currentBtcPriceBuy = 0;
       var lastBid = 0;
       var priceToBuy = 0;
-      var timeBuy = new Date().getTime();
+      var buyTimeStart = new Date().getTime();
       async.series([
         function (cb) {
           utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
@@ -53,7 +53,7 @@ function stateMachine(callback) {
             if (gap > userDefined.gapRange) {
               console.log('State: Buy - Gap: ' + gap);
               gapBuy = true;
-              timeBuy = new Date().getTime();
+              buyTimeStart = new Date().getTime();
               return cb();
             }
             // If we get here, it is not gap buy, check the ratio
@@ -73,7 +73,7 @@ function stateMachine(callback) {
               ratioBuyCounter++;
               return cb(true);
             }
-            timeBuy = new Date().getTime();
+            buyTimeStart = new Date().getTime();
             return cb();
           });
         },
@@ -127,14 +127,14 @@ function stateMachine(callback) {
         function (cb) {
           // If we get here, we can place the buy order
           console.log('LastBid: ' + lastBid + ' CurrentPrice: ' + currentBtcPriceBuy + ' PriceToBuy: ' + priceToBuy);
-          var placeTime = new Date().getTime();
-          var startTime = new Date().getTime();
-          //console.log('Time before placing ' + startTime);
+          var buyTimePlace = new Date().getTime();
           var tradingVolume = userDefined.tradingVolume;
-          timeToPlace = placeTime - timeBuy;
-          if (timeToPlace > 2000){
-            console.log('Takes too long to place order - restarting: ' + timeToPlace);
+          buyStartDelay = buyTimePlace - buyTimeStart;
+          if (buyStartDelay > userDefined.placeBuyTimeLimit){
+            console.log('Takes too long to place order - restarting: ' + buyStartDelay);
             return cb(true);
+          }else{
+            console.log('Time to get to before placing buy order ' + buyStartDelay + 'ms');
           }
           if (gapBuy) tradingVolume = userDefined.tradingGapVolume;
           utils.setBuyOrder(userDefined.transactionDetails, priceToBuy, tradingVolume, function (err, result) {
@@ -148,9 +148,10 @@ function stateMachine(callback) {
             }
             buyOrderID = result;
             console.log('OrderID: ' + buyOrderID + " - 134");
-            var placedTime = new Date().getTime();
-            var delay = placedTime - startTime;
-            console.log('Buy order has been set ... monitor it now ' + placedTime + '++' + delay);
+            var buyTimeEnd = new Date().getTime();
+            var buyPlaceDelay = buyTimeEnd - buyTimePlace;
+            console.log('Buy order has been set ... monitor it now ');
+            console.log('It took ' + buyPlaceDelay + 'ms to place buy order');
             return cb(state.monitorBuy);
           });
         }
@@ -272,9 +273,13 @@ function stateMachine(callback) {
       var priceToSell = 0;
       var lastAskPrice = 0;
       var placeAndForget = false;
+      var sellTimeStart = new Date().getTime();
       async.series([
         function (cb) {
-          if (gapBuy) return cb(); // Done need to look for the ratio if it is a gap buy
+          if (gapBuy){ // Done need to look for the ratio if it is a gap buy
+            sellTimeStart = new Date().getTime();
+            return cb();
+          }
           utils.getOrderBookSummary(userDefined.orderRandHistory, function (err, result) {
             if (err) {
               console.error('Unexpected error 13: ' + err);
@@ -284,6 +289,7 @@ function stateMachine(callback) {
             var ratio = parseFloat(result.bidVolume) / orderTotal;
             console.log('State: Sell - Ratio: ' + ratio.toFixed(2));
             if (ratio > userDefined.ratioSell) return cb(true); // Stay in the state
+            sellTimeStart = new Date().getTime();
             return cb(); // Move on to sell
           });
         },
@@ -378,21 +384,35 @@ function stateMachine(callback) {
           return cb();
         },
         function (cb) {
+          var sellTimePlace = new Date().getTime();
+          sellStartDelay = sellTimePlace - sellTimeStart;
+          if (placeAndForget == false) {
+            if (sellStartDelay > userDefined.placeSellTimeLimit) {
+              console.log('Takes too long to place sell order - restarting: ' + sellStartDelay);
+              return cb(true);
+            }
+          }
+          console.log('Time to get to before placing sell order ' + sellStartDelay + 'ms');
           utils.setSellOrder(userDefined.transactionDetails, priceToSell.toString(), volumeToSell.toString(), function (err, result) {
             if (err) {
               console.error('Unexpected error 19: ' + err);
-              return cb(true);
+              console.error('It usually gets stuck with this error - leaving bought value and returning to buy');
+              return cb(state.buy);
             }
             if (!result) {
               console.error('Unexpected error 20: ' + err);
               return cb(true);
             }
             sellOrderID = result;
-            console.log('Sell order has been set ... monitor it now');
+            var sellTimeEnd = new Date().getTime();
             if (placeAndForget === true) {
               console.error('Not monitoring, was a hard limit/fee based');
               return cb(state.buy);
+            }else{
+              console.log('Sell order has been set ... monitor it now');
             }
+            sellPlaceDelay = sellTimeEnd - sellTimePlace;
+            console.log('Took ' + sellPlaceDelay + 'ms to place sell order');
             return cb(state.monitorSell);
           });
         }
