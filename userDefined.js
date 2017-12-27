@@ -1,7 +1,7 @@
 function UserDefinedClass() {
   this.transactionDetails = {
-    keyID: '-',
-    secretID: '-'
+    keyID: 'jryayzr5dzckq',
+    secretID: 'RazZMEieTsbBCkBfvofLydrGyqMurXRsrNc8aMQ3D0g'
   };
   this.tradingVolume = '0.011';
   this.orderRandHistory = 80;
@@ -11,15 +11,15 @@ function UserDefinedClass() {
   this.ratioRepeat = 2;
   this.inputAmount = 70000;
 
-  this.tradingGapVolume = '0.004';
+  this.tradingGapVolume = '0.005';
   this.gapRange = 300;
   this.feePercentMakeUp = 1.01;
 
-  this.cycleDelay = 5000;
+  this.cycleDelay = 3000;
   this.ratioDelay = 10000;
   this.noCashDelay = 60000;
-  this.placeBuyTimeLimit = 8000;
-  this.placeSellTimeLimit = 9000;
+  this.placeBuyTimeLimit = 10000;
+  this.placeSellTimeLimit = 12000;
 }
 
 var userDefinedModule = new UserDefinedClass();

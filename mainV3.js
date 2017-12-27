@@ -131,7 +131,7 @@ function stateMachine(callback) {
           var tradingVolume = userDefined.tradingVolume;
           buyStartDelay = buyTimePlace - buyTimeStart;
           if (buyStartDelay > userDefined.placeBuyTimeLimit){
-            console.log('Takes too long to place order - restarting: ' + buyStartDelay);
+            console.log('Takes too long to place buy order - restarting: ' + buyStartDelay + 'ms');
             return cb(true);
           }else{
             console.log('Time to get to before placing buy order ' + buyStartDelay + 'ms');
